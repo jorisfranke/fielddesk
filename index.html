@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111a24">
+  <title>Fielddesk — Live Production Planner</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17212b;
+      --muted: #78838d;
+      --line: #e7e9e9;
+      --paper: #fff;
+      --canvas: #f5f6f4;
+      --nav: #111a24;
+      --nav-muted: #9aa5ae;
+      --accent: #e97c4b;
+      --accent-dark: #ca6033;
+      --green: #2e8062;
+      --green-bg: #e8f4ee;
+      --amber: #ad7525;
+      --amber-bg: #fbf1de;
+      --red: #b94a42;
+      --red-bg: #fae9e7;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 246px; flex: 0 0 246px; background: var(--nav); color: #fff;
+      display: flex; flex-direction: column; padding: 25px 16px 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 0 9px 31px; }
+    .brand-mark {
+      width: 35px; height: 35px; border-radius: 11px; background: var(--accent);
+      display: grid; place-items: center; color: #fff; font-size: 19px; font-weight: 800;
+    }
+    .brand-name { font-size: 17px; font-weight: 750; letter-spacing: -.5px; }
+    .brand-sub { color: #93a0aa; font-size: 10px; text-transform: uppercase; letter-spacing: 1.3px; margin-top: 2px; }
+    .nav-label { color: #74818c; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; padding: 10px 11px 8px; text-transform: uppercase; }
+    .nav { display: grid; gap: 4px; }
+    .nav button {
+      color: var(--nav-muted); background: transparent; border: 0; border-radius: 8px;
+      display: flex; gap: 12px; align-items: center; min-height: 42px; padding: 0 11px;
+      text-align: left; font-size: 13px; transition: .15s ease;
+    }
+    .nav button:hover { color: #fff; background: #202b37; }
+    .nav button.active { background: #293541; color: #fff; box-shadow: inset 3px 0 var(--accent); }
+    .nav-icon { display: grid; place-items: center; width: 19px; font-size: 16px; }
+    .side-bottom { margin-top: auto; border-top: 1px solid #29333d; padding: 17px 9px 0; }
+    .db-state { display: flex; align-items: center; gap: 8px; color: #b5c0c8; font-size: 11px; }
+    .db-dot { width: 7px; height: 7px; border-radius: 50%; background: #62c79d; box-shadow: 0 0 0 3px #254638; }
+    .side-note { color: #74818c; font-size: 10px; margin-top: 8px; line-height: 1.5; }
+    .main { min-width: 0; flex: 1; }
+    .topbar {
+      height: 70px; background: rgba(255,255,255,.92); border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 38px;
+      position: sticky; top: 0; z-index: 4; backdrop-filter: blur(12px);
+    }
+    .breadcrumb { color: var(--muted); font-size: 12px; }
+    .breadcrumb strong { color: var(--ink); font-weight: 650; }
+    .top-actions { display: flex; gap: 9px; align-items: center; }
+    .content { max-width: 1380px; margin: 0 auto; padding: 32px 38px 54px; }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 25px; }
+    .eyebrow { color: var(--accent-dark); font-size: 10px; font-weight: 750; letter-spacing: 1.25px; text-transform: uppercase; margin-bottom: 8px; }
+    h1 { margin: 0; font-size: clamp(24px, 3vw, 31px); letter-spacing: -1.05px; line-height: 1.15; }
+    .subtitle { color: var(--muted); font-size: 13px; margin: 7px 0 0; }
+    .button {
+      border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 7px;
+      min-height: 37px; padding: 0 13px; font-size: 12px; font-weight: 650; display: inline-flex;
+      align-items: center; justify-content: center; gap: 7px; white-space: nowrap; transition: .15s ease;
+    }
+    .button:hover { border-color: #c9ced0; background: #fafbfa; }
+    .button.primary { border-color: var(--accent); color: #fff; background: var(--accent); }
+    .button.primary:hover { border-color: var(--accent-dark); background: var(--accent-dark); }
+    .button.danger { color: var(--red); }
+    .button.small { min-height: 30px; padding: 0 9px; font-size: 11px; }
+    .button.icon-only { width: 31px; padding: 0; font-size: 15px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 17px 19px; }
+    .stat-top { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11px; font-weight: 600; }
+    .stat-icon { width: 30px; height: 30px; border-radius: 8px; background: #fff1e9; color: var(--accent-dark); display: grid; place-items: center; font-size: 15px; }
+    .stat-value { font-size: 28px; font-weight: 750; letter-spacing: -.8px; margin-top: 9px; }
+    .stat-foot { color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(270px, .85fr); gap: 17px; }
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+    .panel-head { padding: 17px 19px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .panel-title { font-size: 13px; font-weight: 700; }
+    .panel-caption { color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .event-list { padding: 0 19px; }
+    .event-row { display: flex; align-items: center; gap: 14px; padding: 15px 0; border-bottom: 1px solid #eff0ef; }
+    .event-row:last-child { border-bottom: 0; }
+    .date-tile { flex: 0 0 43px; height: 47px; border-radius: 8px; background: #fff2eb; display: grid; align-content: center; text-align: center; }
+    .date-day { font-size: 18px; line-height: 18px; font-weight: 750; color: #9e4f2c; }
+    .date-month { color: #aa755c; font-size: 9px; text-transform: uppercase; font-weight: 700; margin-top: 3px; }
+    .event-info { min-width: 0; flex: 1; }
+    .event-name { font-weight: 650; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .event-meta { color: var(--muted); font-size: 10px; margin-top: 5px; }
+    .badge { display: inline-flex; align-items: center; border-radius: 20px; padding: 4px 8px; font-size: 9px; line-height: 1; font-weight: 700; white-space: nowrap; background: #eef0f1; color: #67737d; }
+    .badge.Confirmed, .badge.Ready, .badge.Available, .badge.Active { background: var(--green-bg); color: var(--green); }
+    .badge.Planning, .badge.Reserved, .badge.Setup { background: var(--amber-bg); color: var(--amber); }
+    .badge.Completed, .badge.Inactive, .badge.Maintenance { background: #eef0f1; color: #68737d; }
+    .badge.Cancelled, .badge.Issue, .badge.Damaged { background: var(--red-bg); color: var(--red); }
+    .readiness { padding: 5px 19px 13px; }
+    .ready-item { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid #eff0ef; font-size: 11px; }
+    .ready-item:last-child { border-bottom: 0; }
+    .ready-label { display: flex; align-items: center; gap: 9px; }
+    .ready-icon { width: 24px; height: 24px; border-radius: 7px; background: #f2f4f3; color: #596672; display: grid; place-items: center; font-size: 12px; }
+    .ready-count { font-weight: 700; }
+    .activity-note { margin: 15px 19px 19px; border-radius: 8px; padding: 12px; background: #f8f4ef; color: #76695f; font-size: 10px; line-height: 1.5; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 9px; }
+    .search-wrap { position: relative; }
+    .search-wrap:before { content: "⌕"; position: absolute; left: 11px; top: 6px; color: #88939b; font-size: 18px; }
+    .search { height: 37px; width: min(270px, 40vw); border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 11px 0 32px; outline: none; font-size: 11px; }
+    .search:focus, .field:focus { border-color: #e4a181; box-shadow: 0 0 0 3px #fbeee8; }
+    .select-control { height: 37px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 29px 0 10px; color: #47535d; font-size: 11px; outline: none; }
+    .table-panel { overflow: hidden; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { height: 39px; background: #fafbfa; border-bottom: 1px solid var(--line); color: #8a949a; font-size: 9px; text-transform: uppercase; letter-spacing: .75px; font-weight: 700; padding: 0 14px; white-space: nowrap; }
+    td { height: 53px; border-bottom: 1px solid #eff0ef; padding: 8px 14px; font-size: 11px; color: #46525b; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fcfcfb; }
+    td:first-child { color: var(--ink); font-weight: 650; }
+    .actions-cell { text-align: right; }
+    .row-actions { display: flex; justify-content: flex-end; gap: 5px; }
+    .empty-state { text-align: center; padding: 44px 20px; color: var(--muted); font-size: 12px; }
+    .empty-symbol { color: #d3d8d8; font-size: 28px; margin-bottom: 7px; }
+    .table-footer { min-height: 42px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
+    .overlay { position: fixed; inset: 0; background: rgba(18,26,34,.5); z-index: 10; display: grid; place-items: center; padding: 20px; }
+    .modal { width: min(590px, 100%); max-height: min(90vh, 760px); overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 24px 80px #1018204d; }
+    .modal-head { padding: 20px 23px 15px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; justify-content: space-between; }
+    .modal-head h2 { font-size: 17px; margin: 0; letter-spacing: -.3px; }
+    .modal-head p { color: var(--muted); font-size: 10px; margin: 5px 0 0; }
+    .modal-body { padding: 18px 23px 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 14px; }
+    .form-field { display: grid; gap: 6px; }
+    .form-field.wide { grid-column: 1 / -1; }
+    .form-field label { color: #59646c; font-size: 10px; font-weight: 650; }
+    .field { width: 100%; min-height: 36px; border: 1px solid #dfe3e2; border-radius: 6px; padding: 8px 10px; outline: none; color: var(--ink); font-size: 11px; background: #fff; }
+    textarea.field { min-height: 72px; resize: vertical; }
+    .port-section { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 8px; padding: 13px; min-width: 0; }
+    .port-section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .port-section-title { font-size: 11px; font-weight: 700; }
+    .port-section-caption { color: var(--muted); font-size: 9px; margin-top: 3px; }
+    .port-list { display: grid; gap: 7px; overflow-x: auto; }
+    .port-labels, .port-row { min-width: 470px; display: grid; grid-template-columns: 52px minmax(120px, 1.4fr) minmax(90px, .9fr) minmax(90px, 1fr) 30px; gap: 7px; align-items: center; }
+    .port-labels { color: #879199; font-size: 9px; font-weight: 650; padding: 0 2px 2px; }
+    .port-row .field { min-width: 0; }
+    .port-remove { width: 30px; height: 32px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--red); font-size: 16px; }
+    .port-remove:hover { background: var(--red-bg); }
+    .port-empty { color: var(--muted); font-size: 10px; padding: 4px 0 8px; }
+    .metronome-grid { display: grid; grid-template-columns: 1fr minmax(260px, .72fr); gap: 17px; margin-bottom: 17px; }
+    .metronome-panel { background: #17212b; color: #fff; border: 1px solid #17212b; border-radius: 10px; padding: 18px; }
+    .metronome-main { display: grid; grid-template-columns: 1fr 112px; gap: 16px; align-items: center; }
+    .bpm-value { font-size: 52px; line-height: 1; font-weight: 780; letter-spacing: -2px; text-align: center; }
+    .bpm-label { color: #9aa6af; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; text-align: center; margin-top: 8px; }
+    .bpm-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .bpm-controls .button, .metronome-actions .button { border-color: #36444f; background: #25323d; color: #fff; }
+    .bpm-controls .button:hover, .metronome-actions .button:hover { background: #344350; }
+    .bpm-controls input { grid-column: 1 / -1; height: 38px; border: 1px solid #36444f; border-radius: 7px; background: #0f171e; color: #fff; text-align: center; font-size: 18px; outline: none; }
+    .beat-lights { display: grid; grid-template-columns: repeat(8, 1fr); gap: 7px; margin: 18px 0 14px; }
+    .beat-light { height: 12px; border-radius: 20px; background: #344350; transition: transform .05s, background .05s, box-shadow .05s; }
+    .beat-light.active { background: var(--accent); transform: scaleY(1.7); box-shadow: 0 0 18px #e97c4b9c; }
+    .beat-light.accent-active { background: #fff; box-shadow: 0 0 18px #fff8; }
+    .metronome-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .metronome-actions .button.primary { border-color: var(--accent); background: var(--accent); }
+    .metronome-actions .button.running { border-color: #62c79d; background: #2e8062; }
+    .song-side { display: grid; gap: 12px; }
+    .deck-grid-scroll { overflow-x: auto; padding: 16px; }
+    .deck-grid { min-width: 700px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 9px; }
+    .deck-key { min-width: 0; aspect-ratio: 1 / .9; border: 1px solid #dfe3e2; border-radius: 9px; background: #19232d; color: #fff; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; transition: transform .12s, box-shadow .12s; }
+    .deck-key:hover { transform: translateY(-2px); box-shadow: 0 5px 13px #17212b24; }
+    .deck-key[data-color="Red"] { background: #a94840; border-color: #a94840; }
+    .deck-key[data-color="Green"] { background: #2e8062; border-color: #2e8062; }
+    .deck-key[data-color="Amber"] { background: #aa7529; border-color: #aa7529; }
+    .deck-key[data-color="Blue"] { background: #356a9d; border-color: #356a9d; }
+    .deck-key[data-color="Purple"] { background: #705390; border-color: #705390; }
+    .deck-key[data-color="White"] { background: #f0f2f1; border-color: #dfe3e2; color: var(--ink); }
+    .deck-key-number { color: inherit; opacity: .7; font-size: 9px; font-weight: 700; }
+    .deck-key-title { font-size: 11px; font-weight: 750; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .deck-key-action { font-size: 8px; opacity: .78; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .deck-key.unmapped { background: #f9faf9; border-style: dashed; color: #9ba4a9; }
+    .deck-key.unmapped .deck-key-title { font-size: 18px; font-weight: 400; align-self: center; }
+    .modal-actions { padding: 14px 23px 20px; display: flex; justify-content: flex-end; gap: 8px; }
+    .toast { position: fixed; z-index: 20; right: 24px; bottom: 24px; background: #17212b; color: #fff; border-radius: 8px; padding: 12px 16px; font-size: 11px; box-shadow: 0 8px 28px #14202a38; animation: appear .2s ease-out; max-width: min(360px, calc(100vw - 32px)); }
+    .toast.error { background: #963c36; }
+    .login-error { color: var(--red); font-size: 11px; min-height: 15px; margin: 0; }
+    @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .hidden { display: none !important; }
+    [hidden] { display: none !important; }
+    .access-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #111a24; padding: 20px; }
+    .access-card { width: min(420px, 100%); border-radius: 12px; background: #fff; border: 1px solid #dfe3e2; box-shadow: 0 24px 80px #08101866; overflow: hidden; }
+    .access-brand { padding: 23px 24px 18px; border-bottom: 1px solid var(--line); }
+    .access-brand .brand-name { color: var(--ink); }
+    .access-brand .brand-sub { color: var(--muted); }
+    .access-form { display: grid; gap: 12px; padding: 22px 24px 24px; }
+    .access-form h1 { font-size: 20px; }
+    .access-form p { color: var(--muted); font-size: 12px; margin: -5px 0 4px; line-height: 1.5; }
+    .access-error { min-height: 15px; margin: 0; color: var(--red); font-size: 11px; }
+    @media (max-width: 900px) {
+      .sidebar { width: 208px; flex-basis: 208px; }
+      .topbar { padding: 0 23px; }
+      .content { padding: 27px 23px 42px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .metronome-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 650px) {
+      .app { display: block; }
+      .sidebar { width: 100%; padding: 12px 12px 0; }
+      .brand { padding: 0 5px 12px; }
+      .nav-label, .side-bottom { display: none; }
+      .nav { display: flex; overflow-x: auto; gap: 5px; padding-bottom: 10px; scrollbar-width: none; }
+      .nav button { flex: 0 0 auto; min-height: 36px; padding: 0 10px; font-size: 11px; gap: 7px; }
+      .nav button.active { box-shadow: inset 0 -2px var(--accent); }
+      .nav-icon { width: auto; }
+      .topbar { height: 51px; padding: 0 16px; position: static; }
+      .top-actions .button:not(.primary) { display: none; }
+      .content { padding: 23px 15px 36px; }
+      .page-heading { align-items: flex-start; }
+      .page-heading .button { margin-top: 8px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+      .toolbar-left, .toolbar-right { width: 100%; }
+      .search-wrap { flex: 1; }
+      .search { width: 100%; }
+    }
+    @media (max-width: 420px) {
+      .stats { gap: 9px; }
+      .stat-card { padding: 13px; }
+      .stat-value { font-size: 24px; }
+      .metronome-main { grid-template-columns: 1fr 100px; }
+      .bpm-value { font-size: 44px; }
+      .metronome-actions { grid-template-columns: 1fr 1fr; }
+      .metronome-actions #metronome-beats { grid-column: 1 / -1; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-field.wide { grid-column: auto; }
+      .badge { font-size: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">F</div>
+        <div><div class="brand-name">fielddesk</div><div class="brand-sub">Live production planner</div></div>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav" id="navigation" aria-label="Main navigation"></nav>
+      <div class="side-bottom">
+        <div class="db-state"><span class="db-dot"></span><span id="db-label">Local database</span></div>
+        <div class="side-note" id="storage-note">Your production plans are stored in this browser. Export a backup anytime.</div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="breadcrumb">Workspace <span style="padding:0 6px;color:#c1c7ca">/</span> <strong id="crumb">Overview</strong></div>
+        <div class="top-actions" id="top-actions">
+          <button class="button" id="export-button" type="button">↥ <span>Export backup</span></button>
+          <button class="button" id="import-button" type="button">↧ <span>Import</span></button>
+          <input class="hidden" id="import-file" type="file" accept="application/json,.json">
+          <button class="button hidden" id="editor-login-button" type="button">Log in to edit</button>
+          <button class="button primary" id="top-create" type="button">＋ <span>New event</span></button>
+        </div>
+      </header>
+      <section class="content" id="content"></section>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div class="access-overlay" id="access-overlay" hidden>
+    <section class="access-card" role="dialog" aria-modal="true" aria-labelledby="access-title">
+      <div class="access-brand"><div class="brand-mark" style="margin-bottom:10px">F</div><div class="brand-name">fielddesk</div><div class="brand-sub">Live production planner</div></div>
+      <form class="access-form" id="access-form">
+        <h1 id="access-title">Unlock Fielddesk</h1>
+        <p id="access-copy">Enter your password to access the planner.</p>
+        <div class="form-field"><label for="access-password">Password</label><input class="field" id="access-password" name="password" type="password" autocomplete="current-password" minlength="8" required></div>
+        <div class="form-field hidden" id="access-confirm-wrap"><label for="access-password-confirm">Confirm password</label><input class="field" id="access-password-confirm" name="confirm" type="password" autocomplete="new-password" minlength="8"></div>
+        <p class="access-error" id="access-error"></p>
+        <button class="button primary" id="access-submit" type="submit">Unlock</button>
+      </form>
+    </section>
+  </div>
+  <script>
+    (() => {
+      "use strict";
+
+      const DB_NAME = "fielddesk-production-planner";
+      const DB_VERSION = 2;
+      const API_URL = "api.php";
+      const STORE_NAMES = ["events", "cameras", "crew", "channels", "atem", "cables", "songs"];
+      const navItems = [
+        { id: "overview", label: "Overview", icon: "⌂" },
+        { id: "events", label: "Events", icon: "▦" },
+        { id: "cameras", label: "Cameras", icon: "◉" },
+        { id: "crew", label: "Crew", icon: "♙" },
+        { id: "channels", label: "Channels", icon: "⌁" },
+        { id: "atem", label: "ATEM setups", icon: "▣" },
+        { id: "panel-map", label: "1 M/E Button Map", icon: "▤" },
+        { id: "streamdeck", label: "Stream Deck XL", icon: "▦" },
+        { id: "songs", label: "Songs", icon: "♫" },
+        { id: "cables", label: "SDI & cables", icon: "↝" }
+      ];
+      const configs = {
+        events: {
+          title: "Events", singular: "event", subtitle: "Plan upcoming productions, keep past events, and track stream links.",
+          icon: "▦", columns: [["title", "Event"], ["date", "Date"], ["client", "Client"], ["venue", "Venue"], ["streamUrl", "Public stream"], ["multiviewUrl", "Internal multiview"], ["status", "Status"]],
+          fields: [
+            { name: "title", label: "Event name", required: true, wide: true },
+            { name: "client", label: "Client / organization" },
+            { name: "venue", label: "Venue" },
+            { name: "date", label: "Event date", type: "date", required: true },
+            { name: "start", label: "Call time", type: "time" },
+            { name: "end", label: "End time", type: "time" },
+            { name: "streamUrl", label: "Public stream link", type: "url", wide: true, placeholder: "https://…" },
+            { name: "multiviewUrl", label: "Internal multiview stream link", type: "url", wide: true, private: true, placeholder: "https://… (visible to editors only)" },
+            { name: "status", label: "Status", type: "select", options: ["Planning", "Confirmed", "Completed", "Cancelled"], defaultValue: "Planning" },
+            { name: "notes", label: "Production notes", type: "textarea", wide: true }
+          ]
+        },
+        cameras: {
+          title: "Cameras", singular: "camera", subtitle: "Track camera bodies, positions, assignments, and readiness.",
+          icon: "◉", columns: [["name", "Camera / position"], ["model", "Model"], ["operator", "Operator"], ["eventId", "Event"], ["status", "Status"]],
+          fields: [
+            { name: "name", label: "Camera name / position", required: true },
+            { name: "model", label: "Camera / lens model" },
+            { name: "serial", label: "Serial number" },
+            { name: "operator", label: "Assigned operator" },
+            { name: "eventId", label: "Event", type: "event" },
+            { name: "status", label: "Status", type: "select", options: ["Available", "Reserved", "Setup", "Issue", "Maintenance"], defaultValue: "Available" },
+            { name: "notes", label: "Notes", type: "textarea", wide: true }
+          ]
+        },
+        crew: {
+          title: "Crew", singular: "crew member", subtitle: "Coordinate camera operators, video engineers, and production crew.",
+          icon: "♙", columns: [["name", "Crew member"], ["role", "Role"], ["eventId", "Event"], ["email", "Email"], ["status", "Status"]],
+          fields: [
+            { name: "name", label: "Full name", required: true },
+            { name: "role", label: "Production role", type: "select", options: ["Video Manager", "Video Engineer", "Video Operator", "Camera Operator", "Video Planner", "Vision Mixer", "Stage Manager", "Other"], defaultValue: "Camera Operator" },
+            { name: "eventId", label: "Event", type: "event" },
+            { name: "email", label: "Email", type: "email" },
+            { name: "phone", label: "Phone" },
+            { name: "status", label: "Status", type: "select", options: ["Confirmed", "Available", "Unavailable"], defaultValue: "Available" },
+            { name: "notes", label: "Notes", type: "textarea", wide: true }
+          ]
+        },
+        channels: {
+          title: "Signal channels", singular: "channel", subtitle: "Document video inputs, destinations, formats, and routing.",
+          icon: "⌁", columns: [["number", "Ch."], ["name", "Signal name"], ["source", "Source"], ["destination", "Destination"], ["format", "Format"], ["eventId", "Event"]],
+          fields: [
+            { name: "number", label: "Channel / input number", required: true },
+            { name: "name", label: "Signal name", required: true },
+            { name: "source", label: "Source" },
+            { name: "destination", label: "Destination" },
+            { name: "format", label: "Video format", placeholder: "e.g. 1080p50" },
+            { name: "eventId", label: "Event", type: "event" },
+            { name: "notes", label: "Notes", type: "textarea", wide: true }
+          ]
+        },
+        atem: {
+          title: "ATEM setups", singular: "ATEM setup", subtitle: "Configure switchers, video standards, keyers, macros, and every SDI port.",
+          icon: "▣", columns: [["name", "Setup"], ["model", "ATEM model"], ["inputs", "SDI inputs"], ["outputs", "SDI outputs"], ["standard", "Video standard"], ["eventId", "Event"]],
+          fields: [
+            { name: "name", label: "Setup name", required: true },
+            { name: "model", label: "ATEM model", placeholder: "e.g. ATEM 2 M/E Constellation 4K" },
+            { name: "standard", label: "Video standard", placeholder: "e.g. 1080p50" },
+            { name: "eventId", label: "Event", type: "event" },
+            { name: "upstream", label: "Upstream keyers", type: "number" },
+            { name: "downstream", label: "Downstream keyers", type: "number" },
+            { name: "macros", label: "Macro notes", type: "textarea", wide: true, placeholder: "Macro names, trigger order, and notes" },
+            { name: "notes", label: "Other configuration", type: "textarea", wide: true }
+          ]
+        },
+        cables: {
+          title: "SDI & cables", singular: "cable", subtitle: "Label cable runs, lengths, endpoints, and condition before load-in.",
+          icon: "↝", columns: [["label", "Cable label"], ["type", "Type"], ["length", "Length"], ["from", "From"], ["to", "To"], ["eventId", "Event"], ["status", "Condition"]],
+          fields: [
+            { name: "label", label: "Cable label", required: true },
+            { name: "type", label: "Cable type", type: "select", options: ["SDI", "Fiber", "HDMI", "Ethernet", "Power", "Other"], defaultValue: "SDI" },
+            { name: "length", label: "Length", placeholder: "e.g. 50 m" },
+            { name: "from", label: "From / source" },
+            { name: "to", label: "To / destination" },
+            { name: "eventId", label: "Event", type: "event" },
+            { name: "status", label: "Condition", type: "select", options: ["Available", "Reserved", "Issue", "Damaged"], defaultValue: "Available" },
+            { name: "notes", label: "Notes", type: "textarea", wide: true }
+          ]
+        },
+        songs: {
+          title: "Songs", singular: "song", subtitle: "Plan song order, tempo, key, timing, and setlist cues.",
+          icon: "♫", columns: [["position", "No."], ["title", "Song"], ["artist", "Artist"], ["bpm", "BPM"], ["key", "Key"], ["timeSignature", "Time"], ["duration", "Length"], ["eventId", "Event"], ["status", "Status"]],
+          fields: [
+            { name: "position", label: "Setlist position", type: "number", placeholder: "1" },
+            { name: "title", label: "Song title", required: true },
+            { name: "artist", label: "Artist" },
+            { name: "bpm", label: "Tempo (BPM)", type: "number", required: true, placeholder: "120" },
+            { name: "key", label: "Musical key", placeholder: "e.g. C major" },
+            { name: "timeSignature", label: "Time signature", type: "select", options: ["2/4", "3/4", "4/4", "5/4", "6/8", "7/8", "12/8"], defaultValue: "4/4" },
+            { name: "duration", label: "Duration", placeholder: "e.g. 3:45" },
+            { name: "eventId", label: "Event", type: "event" },
+            { name: "status", label: "Status", type: "select", options: ["Planned", "Ready", "Rehearse", "Done"], defaultValue: "Planned" },
+            { name: "notes", label: "Cues and production notes", type: "textarea", wide: true, placeholder: "Start cue, playback, lighting, lyrics, or transition notes" }
+          ]
+        }
+      };
+      let db;
+      let serverMode = false;
+      let serverData = null;
+      let editorAuthenticated = false;
+      let accessAuthenticated = false;
+      let firstLocalSetup = false;
+      let activePage = "overview";
+      let searchTerm = "";
+      let eventFilter = "all";
+      let eventDateFilter = "all";
+      let crewFilter = "all";
+      let selectedPanelAtemId = "";
+      let selectedStreamDeckEventId = "";
+      let selectedStreamDeckPage = 1;
+      let metronomeBpm = 120;
+      let metronomeBeats = 4;
+      let metronomeRunning = false;
+      let metronomeTimer = null;
+      let metronomeBeat = 0;
+      let metronomeAudioContext = null;
+      let tapTimes = [];
+      let toastTimer;
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[char]);
+      const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      const canEdit = () => !serverMode || editorAuthenticated;
+      function requireEditor() {
+        if (canEdit()) return true;
+        openLoginModal();
+        return false;
+      }
+      async function apiRequest(payload) {
+        const response = await fetch(API_URL, {
+          method: payload ? "POST" : "GET",
+          headers: payload ? { "Content-Type": "application/json" } : {},
+          cache: "no-store",
+          credentials: "same-origin",
+          body: payload ? JSON.stringify(payload) : undefined
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const error = new Error(result.error || `Database request failed (${response.status}).`);
+          error.status = response.status;
+          error.setup = Boolean(result.setup);
+          throw error;
+        }
+        return result;
+      }
+      function bytesToHex(bytes) {
+        return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      }
+      async function deriveLocalPassword(password, salt) {
+        if (!window.crypto?.subtle) throw new Error("Secure password storage is not available in this browser.");
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+        const saltBytes = Uint8Array.from(salt.match(/.{2}/g).map((hex) => parseInt(hex, 16)));
+        const bits = await crypto.subtle.deriveBits({
+          name: "PBKDF2",
+          hash: "SHA-256",
+          salt: saltBytes,
+          iterations: 150000
+        }, key, 256);
+        return bytesToHex(new Uint8Array(bits));
+      }
+      function randomHex(bytes) {
+        const values = crypto.getRandomValues(new Uint8Array(bytes));
+        return bytesToHex(values);
+      }
+      function unlockApp() {
+        accessAuthenticated = true;
+        $("#access-overlay").hidden = true;
+        $("#app-shell").hidden = false;
+        sessionStorage.setItem("fielddesk-access", "true");
+      }
+      function showAccessGate(setup = false, message = "") {
+        accessAuthenticated = false;
+        firstLocalSetup = setup;
+        $("#app-shell").hidden = true;
+        $("#access-overlay").hidden = false;
+        $("#access-title").textContent = setup ? "Create Fielddesk password" : "Unlock Fielddesk";
+        $("#access-copy").textContent = setup
+          ? "Create a password for this browser. Keep it safely; it cannot be recovered."
+          : "Enter your password to access the planner.";
+        $("#access-confirm-wrap").classList.toggle("hidden", !setup);
+        $("#access-password-confirm").required = setup;
+        $("#access-password").value = "";
+        $("#access-password-confirm").value = "";
+        $("#access-error").textContent = message;
+        $("#access-submit").textContent = setup ? "Create password" : "Unlock";
+        $("#access-password").focus();
+      }
+      async function handleAccessSubmit(event) {
+        event.preventDefault();
+        const password = new FormData(event.currentTarget).get("password");
+        const confirm = new FormData(event.currentTarget).get("confirm");
+        const errorLabel = $("#access-error");
+        try {
+          if (serverMode) {
+            const result = await apiRequest({ action: "login", password });
+            editorAuthenticated = Boolean(result.authenticated);
+            unlockApp();
+            updateEditorControls();
+            await render();
+            return;
+          }
+          if (firstLocalSetup) {
+            if (password !== confirm) throw new Error("Passwords do not match.");
+            if (String(password).length < 8) throw new Error("Use at least 8 characters.");
+            const salt = randomHex(16);
+            const hash = await deriveLocalPassword(String(password), salt);
+            localStorage.setItem("fielddesk-local-auth", JSON.stringify({ salt, hash }));
+            unlockApp();
+            await startLocalDatabase();
+            return;
+          }
+          const saved = JSON.parse(localStorage.getItem("fielddesk-local-auth") || "null");
+          if (!saved?.salt || !saved?.hash) throw new Error("No local password is configured.");
+          const hash = await deriveLocalPassword(String(password), saved.salt);
+          if (hash !== saved.hash) throw new Error("Incorrect password.");
+          unlockApp();
+          await startLocalDatabase();
+        } catch (error) {
+          errorLabel.textContent = error.message;
+        }
+      }
+      const store = (name, mode = "readonly") => db.transaction(name, mode).objectStore(name);
+      const getAll = (name) => new Promise((resolve, reject) => {
+        if (serverMode) {
+          resolve(serverData?.stores?.[name] || []);
+          return;
+        }
+        const request = store(name).getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const writeRecord = (name, record) => new Promise((resolve, reject) => {
+        if (serverMode) {
+          apiRequest({ action: "put", store: name, record })
+            .then(() => apiRequest())
+            .then((data) => { serverData = data; resolve(); })
+            .catch((error) => {
+              if (error.status === 401) openLoginModal();
+              reject(error);
+            });
+          return;
+        }
+        const transaction = db.transaction(name, "readwrite");
+        transaction.objectStore(name).put(record);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error("Database write was aborted."));
+      });
+      const deleteRecord = (name, id) => new Promise((resolve, reject) => {
+        if (serverMode) {
+          apiRequest({ action: "delete", store: name, id })
+            .then(() => apiRequest())
+            .then((data) => { serverData = data; resolve(); })
+            .catch((error) => {
+              if (error.status === 401) openLoginModal();
+              reject(error);
+            });
+          return;
+        }
+        const transaction = db.transaction(name, "readwrite");
+        transaction.objectStore(name).delete(id);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error("Database delete was aborted."));
+      });
+      const openDatabase = () => new Promise((resolve, reject) => {
+        if (!("indexedDB" in window)) {
+          reject(new Error("This browser does not support IndexedDB, which is required for local storage."));
+          return;
+        }
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          STORE_NAMES.forEach((name) => {
+            if (!database.objectStoreNames.contains(name)) database.createObjectStore(name, { keyPath: "id" });
+          });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Could not open the local database."));
+        request.onblocked = () => reject(new Error("Database upgrade is blocked by another open Fielddesk tab. Close other tabs and reload."));
+      });
+      const sampleData = () => {
+        const eventOne = { id: uid(), title: "Northstar Product Summit", client: "Northstar Labs", venue: "Forum Hall · Amsterdam", date: "2026-12-03", start: "07:00", end: "20:30", status: "Confirmed", notes: "Main stage + confidence monitor" };
+        const eventTwo = { id: uid(), title: "Studio Sessions — Winter", client: "Studio Noord", venue: "Studio 2 · Utrecht", date: "2026-12-11", start: "09:00", end: "17:00", status: "Planning", notes: "Three-camera interview setup" };
+        return {
+          events: [eventOne, eventTwo],
+          cameras: [
+            { id: uid(), name: "Cam 1 · Wide", model: "Blackmagic URSA Broadcast G2", serial: "URSA-2041", operator: "Milan de Vries", eventId: eventOne.id, status: "Reserved", notes: "Tripod, 24-70mm" },
+            { id: uid(), name: "Cam 2 · Stage left", model: "Blackmagic Studio Camera 4K Pro", serial: "S4K-1182", operator: "Sanne Bakker", eventId: eventOne.id, status: "Available", notes: "Fiber converter on CCU" },
+            { id: uid(), name: "Cam 3 · Interview", model: "Blackmagic Studio Camera 6K Pro", serial: "S6K-0872", operator: "Jules Visser", eventId: eventTwo.id, status: "Available", notes: "" }
+          ],
+          crew: [
+            { id: uid(), name: "Milan de Vries", role: "Camera Operator", eventId: eventOne.id, email: "milan@example.com", phone: "", status: "Confirmed", notes: "" },
+            { id: uid(), name: "Sanne Bakker", role: "Video Engineer", eventId: eventOne.id, email: "sanne@example.com", phone: "", status: "Confirmed", notes: "System + comms" },
+            { id: uid(), name: "Jules Visser", role: "Video Operator", eventId: eventTwo.id, email: "jules@example.com", phone: "", status: "Available", notes: "" }
+          ],
+          channels: [
+            { id: uid(), number: "1", name: "Cam 1 · Wide", source: "Cam 1 SDI OUT", destination: "ATEM Input 1", format: "1080p50", eventId: eventOne.id, notes: "" },
+            { id: uid(), number: "2", name: "Cam 2 · Stage left", source: "Cam 2 SDI OUT", destination: "ATEM Input 2", format: "1080p50", eventId: eventOne.id, notes: "" },
+            { id: uid(), number: "3", name: "Presentation", source: "Playback laptop", destination: "ATEM Input 3", format: "1080p50", eventId: eventOne.id, notes: "Scaler at FOH" }
+          ],
+          atem: [
+            { id: uid(), name: "Main stage switcher", model: "ATEM 2 M/E Constellation HD", standard: "1080p50", eventId: eventOne.id, upstream: "4", downstream: "2", macros: "1: Open show · 2: Speaker · 3: Break", notes: "Program + clean feed to record" },
+            { id: uid(), name: "Interview switcher", model: "ATEM Television Studio HD8", standard: "1080p50", eventId: eventTwo.id, upstream: "4", downstream: "2", macros: "", notes: "" }
+          ],
+          cables: [
+            { id: uid(), label: "SDI-014", type: "SDI", length: "50 m", from: "Cam 1", to: "Video world · patch 1", eventId: eventOne.id, status: "Reserved", notes: "Belden 1694A" },
+            { id: uid(), label: "SDI-022", type: "SDI", length: "30 m", from: "Cam 2", to: "Video world · patch 2", eventId: eventOne.id, status: "Available", notes: "" },
+            { id: uid(), label: "FBR-003", type: "Fiber", length: "100 m", from: "Cam 2 CCU", to: "Camera position", eventId: eventOne.id, status: "Available", notes: "SMPTE hybrid" }
+          ],
+          songs: [
+            { id: uid(), position: "1", title: "Opening Sequence", artist: "House band", bpm: "118", key: "C major", timeSignature: "4/4", duration: "3:20", eventId: eventOne.id, status: "Ready", notes: "Fade to first wide shot" },
+            { id: uid(), position: "2", title: "Product Reveal", artist: "Original cue", bpm: "128", key: "E minor", timeSignature: "4/4", duration: "2:45", eventId: eventOne.id, status: "Planned", notes: "Accent on final downbeat" }
+          ]
+        };
+      };
+      async function seedIfEmpty() {
+        const seed = sampleData();
+        const missing = [];
+        for (const name of STORE_NAMES) {
+          const records = await getAll(name);
+          if (records.length === 0 && seed[name]?.length) {
+            missing.push([name, seed[name]]);
+          }
+        }
+        if (!missing.length) return;
+        const transaction = db.transaction(missing.map(([name]) => name), "readwrite");
+        missing.forEach(([name, records]) => records.forEach((record) => transaction.objectStore(name).put(record)));
+        await new Promise((resolve, reject) => {
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error);
+          transaction.onabort = () => reject(transaction.error || new Error("Could not initialize sample production data."));
+        });
+      }
+
+      function showToast(message, isError = false) {
+        const root = $("#toast-root");
+        root.innerHTML = `<div class="toast${isError ? " error" : ""}">${escapeHtml(message)}</div>`;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { root.innerHTML = ""; }, 3400);
+      }
+      function formatDate(value, options = { month: "short", day: "numeric", year: "numeric" }) {
+        if (!value) return "—";
+        const date = new Date(`${value}T12:00:00`);
+        return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en", options).format(date);
+      }
+      function eventName(id, events) {
+        return events.find((event) => event.id === id)?.title || "Unassigned";
+      }
+      function safeExternalUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+        } catch {
+          return "";
+        }
+      }
+      function localDateString(date = new Date()) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      }
+      function statusBadge(status) {
+        return status ? `<span class="badge ${escapeHtml(status)}">${escapeHtml(status)}</span>` : "—";
+      }
+      function renderNavigation() {
+        $("#navigation").innerHTML = navItems.map((item) => `
+          <button type="button" data-page="${item.id}" class="${activePage === item.id ? "active" : ""}" ${activePage === item.id ? 'aria-current="page"' : ""}>
+            <span class="nav-icon">${item.icon}</span><span>${item.label}</span>
+          </button>`).join("");
+      }
+      function renderPageHeading(title, subtitle, actionText = "＋ Add") {
+        return `<div class="page-heading"><div><div class="eyebrow">Production workspace</div><h1>${escapeHtml(title)}</h1><p class="subtitle">${escapeHtml(subtitle)}</p></div>
+          ${actionText && canEdit() ? `<button class="button primary" type="button" data-create="${activePage}">${escapeHtml(actionText)}</button>` : ""}</div>`;
+      }
+      async function renderOverview() {
+        const [events, cameras, crew, channels, atem, cables] = await Promise.all(STORE_NAMES.map(getAll));
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
+        const upcoming = events.filter((event) => event.date >= today && event.status !== "Cancelled")
+          .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+        const stats = [
+          ["Upcoming events", upcoming.length, "On your production calendar", "▦"],
+          ["Camera positions", cameras.length, "Bodies & assigned positions", "◉"],
+          ["Crew members", crew.length, "Across all productions", "♙"],
+          ["Signal channels", channels.length, "Documented video routes", "⌁"]
+        ];
+        $("#content").innerHTML = `${renderPageHeading("Overview", "Your live production plans, crew, and signal flow at a glance.", "")}
+          <div class="stats">${stats.map(([label, value, foot, icon]) => `<article class="stat-card"><div class="stat-top"><span>${label}</span><span class="stat-icon">${icon}</span></div><div class="stat-value">${value}</div><div class="stat-foot">${foot}</div></article>`).join("")}</div>
+          <div class="dashboard-grid">
+            <section class="panel"><div class="panel-head"><div><div class="panel-title">Upcoming productions</div><div class="panel-caption">Your next scheduled event days</div></div><button class="button small" data-page="events">All events →</button></div>
+              <div class="event-list">${upcoming.length ? upcoming.map((event) => {
+                const date = new Date(`${event.date}T12:00:00`);
+                return `<div class="event-row"><div class="date-tile"><div class="date-day">${date.getDate()}</div><div class="date-month">${new Intl.DateTimeFormat("en", { month: "short" }).format(date)}</div></div>
+                  <div class="event-info"><div class="event-name">${escapeHtml(event.title)}</div><div class="event-meta">${escapeHtml(event.client || "No client")} · ${escapeHtml(event.venue || "Venue TBD")}${event.start ? ` · Call ${escapeHtml(event.start)}` : ""}</div></div>${statusBadge(event.status)}</div>`;
+              }).join("") : `<div class="empty-state">No upcoming events yet. Create one to start planning.</div>`}</div>
+            </section>
+            <section class="panel"><div class="panel-head"><div><div class="panel-title">Production inventory</div><div class="panel-caption">Resources in your workspace</div></div></div>
+              <div class="readiness">
+                ${[[cameras.length, "Camera positions", "◉"], [crew.length, "Crew members", "♙"], [channels.length, "Signal channels", "⌁"], [atem.length, "ATEM setups", "▣"], [cables.length, "Cables tracked", "↝"]].map(([count, label, icon]) => `<div class="ready-item"><div class="ready-label"><span class="ready-icon">${icon}</span><span>${label}</span></div><span class="ready-count">${count}</span></div>`).join("")}
+              </div>
+              <div class="activity-note">Plans are saved locally in this browser using IndexedDB. Use <strong>Export backup</strong> to keep a portable copy of your production database.</div>
+            </section>
+          </div>`;
+      }
+      async function renderTable(page) {
+        const config = configs[page];
+        const [records, events] = await Promise.all([getAll(page), getAll("events")]);
+        const today = localDateString();
+        const filtered = records.filter((record) => {
+          const matchesQuery = !searchTerm || Object.values(record).some((value) => String(value ?? "").toLowerCase().includes(searchTerm.toLowerCase()));
+          const matchesEvent = page === "events" || eventFilter === "all" || record.eventId === eventFilter;
+          const isPastEvent = record.date < today || record.status === "Completed" || record.status === "Cancelled";
+          const matchesEventDate = page !== "events" || eventDateFilter === "all" ||
+            (eventDateFilter === "past" ? isPastEvent : !isPastEvent);
+          const matchesCrew = page !== "crew" || crewFilter === "all" ||
+            (crewFilter === "leaders" ? record.role !== "Camera Operator" : record.role === "Camera Operator");
+          return matchesQuery && matchesEvent && matchesEventDate && matchesCrew;
+        }).sort((a, b) => {
+          if (page === "events") return String(b.date || "").localeCompare(String(a.date || ""));
+          const field = config.columns[0][0];
+          return String(a[field] || "").localeCompare(String(b[field] || ""), undefined, { numeric: true });
+        });
+        const columns = config.columns.filter(([field]) => field !== "multiviewUrl" || canEdit());
+        $("#content").innerHTML = `${renderPageHeading(config.title, config.subtitle, `＋ Add ${config.singular}`)}
+          <div class="toolbar"><div class="toolbar-left"><div class="search-wrap"><input id="search-input" class="search" type="search" placeholder="Search ${escapeHtml(config.title.toLowerCase())}..." value="${escapeHtml(searchTerm)}" aria-label="Search ${escapeHtml(config.title.toLowerCase())}"></div></div>
+            <div class="toolbar-right">${page === "events" ? `<select id="event-date-filter" class="select-control" aria-label="Filter events by date"><option value="all" ${eventDateFilter === "all" ? "selected" : ""}>All events · past and upcoming</option><option value="upcoming" ${eventDateFilter === "upcoming" ? "selected" : ""}>Upcoming</option><option value="past" ${eventDateFilter === "past" ? "selected" : ""}>Past / completed</option></select>` : ""}
+              ${page === "crew" ? `<select id="crew-filter" class="select-control" aria-label="Filter crew by role group"><option value="all" ${crewFilter === "all" ? "selected" : ""}>All crew</option><option value="leaders" ${crewFilter === "leaders" ? "selected" : ""}>Leaders</option><option value="workers" ${crewFilter === "workers" ? "selected" : ""}>Workers</option></select>` : ""}
+              ${page !== "events" && events.length ? `<select id="event-filter" class="select-control" aria-label="Filter by event"><option value="all">All events</option>${events.sort((a, b) => a.date.localeCompare(b.date)).map((event) => `<option value="${escapeHtml(event.id)}" ${eventFilter === event.id ? "selected" : ""}>${escapeHtml(event.title)}</option>`).join("")}</select>` : ""}
+              <button class="button" type="button" data-export="${page}">↥ Export CSV</button></div>
+          </div>
+          <section class="panel table-panel"><div class="table-scroll"><table><thead><tr>${columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("")}${canEdit() ? `<th style="text-align:right">Actions</th>` : ""}</tr></thead>
+            <tbody>${filtered.length ? filtered.map((record) => `<tr>${columns.map(([field]) => {
+              let value = record[field];
+              if (field === "eventId") value = eventName(value, events);
+              else if (field === "date") value = formatDate(value);
+              else if (field === "status") return `<td>${statusBadge(value)}</td>`;
+              else if (field === "streamUrl" || field === "multiviewUrl") {
+                const url = safeExternalUrl(value);
+                return `<td>${url ? `<a class="button small" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${field === "streamUrl" ? "Open stream" : "Open multiview"}</a>` : "—"}</td>`;
+              }
+              else if (field === "inputs" || field === "outputs") value = `${Array.isArray(value) ? value.length : 0} configured`;
+              return `<td title="${escapeHtml(value || "")}">${escapeHtml(value || "—")}</td>`;
+            }).join("")}${canEdit() ? `<td class="actions-cell"><div class="row-actions"><button class="button icon-only small" type="button" data-edit="${escapeHtml(record.id)}" aria-label="Edit" title="Edit">✎</button><button class="button icon-only small danger" type="button" data-delete="${escapeHtml(record.id)}" aria-label="Delete" title="Delete">×</button></div></td>` : ""}</tr>`).join("") : `<tr><td colspan="${columns.length + (canEdit() ? 1 : 0)}"><div class="empty-state"><div class="empty-symbol">${config.icon}</div>${searchTerm || eventFilter !== "all" || (page === "events" && eventDateFilter !== "all") ? "No matching records." : `No ${escapeHtml(config.title.toLowerCase())} added yet.`}</div></td></tr>`}</tbody>
+          </table></div><div class="table-footer"><span>${filtered.length} ${filtered.length === 1 ? escapeHtml(config.singular) : escapeHtml(config.title.toLowerCase())}</span><span>Changes save automatically</span></div></section>`;
+      }
+      function metronomeTick(accent = false) {
+        if (metronomeAudioContext) {
+          const oscillator = metronomeAudioContext.createOscillator();
+          const gain = metronomeAudioContext.createGain();
+          const now = metronomeAudioContext.currentTime;
+          oscillator.frequency.setValueAtTime(accent ? 1200 : 850, now);
+          gain.gain.setValueAtTime(accent ? 0.16 : 0.11, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+          oscillator.connect(gain);
+          gain.connect(metronomeAudioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + 0.06);
+        }
+        const lights = document.queryAll ? null : document.querySelectorAll(".beat-light");
+        lights.forEach((light, index) => {
+          light.classList.toggle("active", index === metronomeBeat);
+          light.classList.toggle("accent-active", index === metronomeBeat && accent);
+        });
+        setTimeout(() => {
+          document.querySelectorAll(".beat-light").forEach((light) => {
+            light.classList.remove("active", "accent-active");
+          });
+        }, Math.max(70, Math.min(180, 30000 / metronomeBpm)));
+      }
+      function startMetronome() {
+        if (!metronomeAudioContext) {
+          metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (metronomeAudioContext.state === "suspended") metronomeAudioContext.resume();
+        metronomeRunning = true;
+        metronomeBeat = 0;
+        metronomeTick(true);
+        clearInterval(metronomeTimer);
+        metronomeTimer = setInterval(() => {
+          metronomeBeat = (metronomeBeat + 1) % metronomeBeats;
+          metronomeTick(metronomeBeat === 0);
+        }, 60000 / metronomeBpm);
+        updateMetronomeControls();
+      }
+      function stopMetronome() {
+        metronomeRunning = false;
+        clearInterval(metronomeTimer);
+        metronomeTimer = null;
+        metronomeBeat = 0;
+        document.querySelectorAll(".beat-light").forEach((light) => light.classList.remove("active", "accent-active"));
+        updateMetronomeControls();
+      }
+      function updateMetronomeControls() {
+        const button = $("#metronome-toggle");
+        if (button) {
+          button.textContent = metronomeRunning ? "■ Stop" : "▶ Start";
+          button.className = `button primary${metronomeRunning ? " running" : ""}`;
+        }
+        const bpmInput = $("#metronome-bpm");
+        const bpmValue = $("#metronome-bpm-value");
+        if (bpmInput) bpmInput.value = String(metronomeBpm);
+        if (bpmValue) bpmValue.textContent = String(metronomeBpm);
+      }
+      function setMetronomeBpm(value) {
+        metronomeBpm = Math.min(300, Math.max(30, Number(value) || 120));
+        updateMetronomeControls();
+        if (metronomeRunning) {
+          stopMetronome();
+          startMetronome();
+        }
+      }
+      function tapMetronome() {
+        const now = performance.now();
+        tapTimes = tapTimes.filter((time) => now - time < 2200);
+        tapTimes.push(now);
+        if (tapTimes.length >= 2) {
+          const intervals = tapTimes.slice(1).map((time, index) => time - tapTimes[index]);
+          const average = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+          setMetronomeBpm(Math.round(60000 / average));
+        }
+      }
+      async function renderSongs() {
+        const [songs, events] = await Promise.all([getAll("songs"), getAll("events")]);
+        const filtered = songs.filter((song) => {
+          const matchesQuery = !searchTerm || Object.values(song).some((value) => String(value ?? "").toLowerCase().includes(searchTerm.toLowerCase()));
+          const matchesEvent = eventFilter === "all" || song.eventId === eventFilter;
+          return matchesQuery && matchesEvent;
+        }).sort((a, b) => Number(a.position || 999) - Number(b.position || 999) || String(a.title).localeCompare(String(b.title)));
+        $("#content").innerHTML = `${renderPageHeading("Songs", "Plan setlists, tempos, keys, timing, duration, and live cues.", "＋ Add song")}
+          <div class="metronome-grid"><section class="metronome-panel">
+            <div class="metronome-main"><div><div id="metronome-bpm-value" class="bpm-value">${metronomeBpm}</div><div class="bpm-label">BPM</div></div>
+              <div class="bpm-controls"><input id="metronome-bpm" type="number" min="30" max="300" value="${metronomeBpm}" aria-label="Metronome BPM"><button class="button" type="button" data-bpm-change="-5">−5</button><button class="button" type="button" data-bpm-change="5">+5</button></div>
+            </div>
+            <div id="beat-lights" class="beat-lights">${Array.from({ length: metronomeBeats }, () => `<span class="beat-light"></span>`).join("")}</div>
+            <div class="metronome-actions"><button class="button primary${metronomeRunning ? " running" : ""}" id="metronome-toggle" type="button">${metronomeRunning ? "■ Stop" : "▶ Start"}</button><button class="button" id="metronome-tap" type="button">Tap tempo</button><select id="metronome-beats" class="button" aria-label="Metronome beats per bar"><option value="2" ${metronomeBeats === 2 ? "selected" : ""}>2 / bar</option><option value="3" ${metronomeBeats === 3 ? "selected" : ""}>3 / bar</option><option value="4" ${metronomeBeats === 4 ? "selected" : ""}>4 / bar</option><option value="5" ${metronomeBeats === 5 ? "selected" : ""}>5 / bar</option><option value="6" ${metronomeBeats === 6 ? "selected" : ""}>6 / bar</option><option value="7" ${metronomeBeats === 7 ? "selected" : ""}>7 / bar</option><option value="8" ${metronomeBeats === 8 ? "selected" : ""}>8 / bar</option></select></div>
+          </section><section class="panel"><div class="panel-head"><div><div class="panel-title">Selected setlist</div><div class="panel-caption">Choose a song tempo to load it into the metronome.</div></div></div>
+            <div class="event-list">${filtered.slice(0, 5).length ? filtered.slice(0, 5).map((song) => `<div class="event-row"><div class="date-tile" style="background:#edf4fb"><div class="date-day">${escapeHtml(song.position || "—")}</div><div class="date-month">Song</div></div><div class="event-info"><div class="event-name">${escapeHtml(song.title)}</div><div class="event-meta">${escapeHtml(song.artist || "No artist")} · ${escapeHtml(song.key || "Key TBD")} · ${escapeHtml(song.duration || "Length TBD")}</div></div><button class="button small" type="button" data-use-bpm="${escapeHtml(song.bpm || "120")}">${escapeHtml(song.bpm || "—")} BPM</button></div>`).join("") : `<div class="empty-state">No songs match this setlist.</div>`}</div>
+          </section></div>
+          <div class="toolbar"><div class="toolbar-left"><div class="search-wrap"><input id="search-input" class="search" type="search" placeholder="Search songs..." value="${escapeHtml(searchTerm)}" aria-label="Search songs"></div></div><div class="toolbar-right">${events.length ? `<select id="event-filter" class="select-control" aria-label="Filter songs by event"><option value="all">All events</option>${events.map((event) => `<option value="${escapeHtml(event.id)}" ${eventFilter === event.id ? "selected" : ""}>${escapeHtml(event.title)}</option>`).join("")}</select>` : ""}<button class="button" type="button" data-export="songs">↥ Export CSV</button></div></div>
+          <section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>No.</th><th>Song</th><th>Artist</th><th>BPM</th><th>Key</th><th>Time</th><th>Length</th><th>Event</th><th>Status</th>${canEdit() ? `<th style="text-align:right">Actions</th>` : ""}</tr></thead><tbody>${filtered.length ? filtered.map((song) => `<tr><td>${escapeHtml(song.position || "—")}</td><td>${escapeHtml(song.title)}</td><td>${escapeHtml(song.artist || "—")}</td><td><button class="button small" type="button" data-use-bpm="${escapeHtml(song.bpm || "120")}">${escapeHtml(song.bpm || "—")} BPM</button></td><td>${escapeHtml(song.key || "—")}</td><td>${escapeHtml(song.timeSignature || "—")}</td><td>${escapeHtml(song.duration || "—")}</td><td>${escapeHtml(eventName(song.eventId, events))}</td><td>${statusBadge(song.status)}</td>${canEdit() ? `<td class="actions-cell"><div class="row-actions"><button class="button icon-only small" type="button" data-edit="${escapeHtml(song.id)}" aria-label="Edit" title="Edit">✎</button><button class="button icon-only small danger" type="button" data-delete="${escapeHtml(song.id)}" aria-label="Delete" title="Delete">×</button></div></td>` : ""}</tr>`).join("") : `<tr><td colspan="${canEdit() ? 10 : 9}"><div class="empty-state"><div class="empty-symbol">♫</div>No songs planned yet.</div></td></tr>`}</tbody></table></div><div class="table-footer"><span>${filtered.length} ${filtered.length === 1 ? "song" : "songs"}</span><span>Changes save automatically</span></div></section>`;
+      }
+      async function renderPanelMapping() {
+        const [atems, events] = await Promise.all([getAll("atem"), getAll("events")]);
+        if (!atems.some((setup) => setup.id === selectedPanelAtemId)) selectedPanelAtemId = atems[0]?.id || "";
+        const setup = atems.find((item) => item.id === selectedPanelAtemId);
+        const mappings = setup?.panelButtons || [];
+        $("#content").innerHTML = `${renderPageHeading("Advanced Panel 1 M/E Button Mapping", "Plan button assignments for your Advanced Panel and keep the layout with its ATEM setup.", "")}
+          <div class="toolbar"><div class="toolbar-left">
+            ${atems.length ? `<select id="panel-setup-select" class="select-control" aria-label="Select ATEM setup">${atems.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedPanelAtemId ? "selected" : ""}>${escapeHtml(item.name)}${item.model ? ` · ${escapeHtml(item.model)}` : ""}</option>`).join("")}</select>` : ""}
+          </div><div class="toolbar-right">
+            ${setup ? `<span class="badge">${mappings.length} mapped ${mappings.length === 1 ? "button" : "buttons"}</span>${canEdit() ? `<button class="button primary" type="button" data-add-panel-button>＋ Add button mapping</button>` : ""}` : ""}
+          </div></div>
+          ${!atems.length ? `<section class="panel"><div class="empty-state"><div class="empty-symbol">▤</div>Add an ATEM setup first, then plan its panel button mapping.<br><br><button class="button primary" type="button" data-page="atem">＋ Add ATEM setup</button></div></section>` :
+            `<section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Panel section</th><th>Physical button</th><th>Button label</th><th>Assignment / action</th><th>Color</th><th>Notes</th>${canEdit() ? `<th style="text-align:right">Actions</th>` : ""}</tr></thead>
+              <tbody>${mappings.length ? mappings.map((mapping) => `<tr>
+                <td>${escapeHtml(mapping.section || "—")}</td><td>${escapeHtml(mapping.button || "—")}</td><td>${escapeHtml(mapping.label || "—")}</td>
+                <td>${escapeHtml(mapping.assignment || "—")}</td><td>${mapping.color ? `<span class="badge">${escapeHtml(mapping.color)}</span>` : "—"}</td>
+                <td title="${escapeHtml(mapping.notes || "")}">${escapeHtml(mapping.notes || "—")}</td>
+                ${canEdit() ? `<td class="actions-cell"><div class="row-actions"><button class="button icon-only small" type="button" data-edit-panel-button="${escapeHtml(mapping.id)}" aria-label="Edit mapping" title="Edit mapping">✎</button><button class="button icon-only small danger" type="button" data-delete-panel-button="${escapeHtml(mapping.id)}" aria-label="Delete mapping" title="Delete mapping">×</button></div></td>` : ""}
+              </tr>`).join("") : `<tr><td colspan="7"><div class="empty-state"><div class="empty-symbol">▤</div>No buttons mapped for this ATEM yet. Add one row per panel button you want to plan.</div></td></tr>`}</tbody>
+            </table></div><div class="table-footer"><span>${escapeHtml(setup.name)} · ${mappings.length} mappings</span><span>Saved with this ATEM setup</span></div></section>`}`;
+      }
+      async function renderStreamDeck() {
+        const events = await getAll("events");
+        if (!events.some((event) => event.id === selectedStreamDeckEventId)) selectedStreamDeckEventId = events[0]?.id || "";
+        const event = events.find((item) => item.id === selectedStreamDeckEventId);
+        const pageCount = Math.max(1, Number(event?.streamDeckPageCount) || 1);
+        selectedStreamDeckPage = Math.min(Math.max(1, selectedStreamDeckPage), pageCount);
+        const mappings = event?.streamDeckButtons || [];
+        const mappedButtons = new Map(mappings.filter((item) => Number(item.page || 1) === selectedStreamDeckPage).map((item) => [Number(item.button), item]));
+        $("#content").innerHTML = `${renderPageHeading("Companion Stream Deck XL", "Plan Companion button actions on the Stream Deck XL's 8 × 4 key grid.", "")}
+          <div class="toolbar"><div class="toolbar-left">
+            ${events.length ? `<select id="streamdeck-event-select" class="select-control" aria-label="Select event">${events.sort((a, b) => a.date.localeCompare(b.date)).map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedStreamDeckEventId ? "selected" : ""}>${escapeHtml(item.title)}</option>`).join("")}</select>` : ""}
+          </div><div class="toolbar-right">
+            ${event ? `<select id="streamdeck-page-select" class="select-control" aria-label="Select Stream Deck page">${Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => `<option value="${page}" ${page === selectedStreamDeckPage ? "selected" : ""}>Page ${page}</option>`).join("")}</select>${canEdit() ? `<button class="button" type="button" data-add-streamdeck-page>＋ Add page</button>` : ""}<span class="badge">${mappedButtons.size} / 32 keys mapped</span>` : ""}
+          </div></div>
+          ${!event ? `<section class="panel"><div class="empty-state"><div class="empty-symbol">▦</div>Create an event before planning its Stream Deck layout.<br><br><button class="button primary" type="button" data-page="events">＋ Add event</button></div></section>` :
+            `<section class="panel"><div class="panel-head"><div><div class="panel-title">${escapeHtml(event.title)} · Page ${selectedStreamDeckPage}</div><div class="panel-caption">Select any key to assign or edit its Companion mapping. Each page has 32 keys.</div></div></div>
+              <div class="deck-grid-scroll"><div class="deck-grid">${Array.from({ length: 32 }, (_, index) => {
+                const number = index + 1;
+                const mapping = mappedButtons.get(number);
+                return `<button type="button" class="deck-key${mapping ? "" : " unmapped"}" data-color="${escapeHtml(mapping?.color || "Default")}" data-streamdeck-key="${number}" aria-label="Configure button ${number}${mapping?.title ? `: ${escapeHtml(mapping.title)}` : ""}" title="${mapping ? escapeHtml(`${mapping.title || ""} ${mapping.action || ""}`.trim()) : `Configure button ${number}`}">
+                  <span class="deck-key-number">${String(number).padStart(2, "0")}</span><span class="deck-key-title">${mapping ? escapeHtml(mapping.title || mapping.action || "Mapped") : "+"}</span>${mapping ? `<span class="deck-key-action">${escapeHtml(mapping.action || "")}</span>` : ""}
+                </button>`;
+              }).join("")}</div></div>
+              <div class="table-footer"><span>${escapeHtml(event.title)} · Page ${selectedStreamDeckPage} of ${pageCount}</span><span>Mappings are saved with this event</span></div>
+            </section>`}`;
+      }
+      async function render() {
+        renderNavigation();
+        $("#crumb").textContent = navItems.find((item) => item.id === activePage)?.label || "Overview";
+        $("#top-create").classList.toggle("hidden",
+          (serverMode && !editorAuthenticated) || (activePage !== "overview" && activePage !== "events"));
+        if (activePage === "overview") await renderOverview();
+        else if (activePage === "panel-map") await renderPanelMapping();
+        else if (activePage === "streamdeck") await renderStreamDeck();
+        else if (activePage === "songs") await renderSongs();
+        else await renderTable(activePage);
+      }
+
+      function inputFor(field, value, events) {
+        const name = escapeHtml(field.name);
+        const label = escapeHtml(field.label);
+        const required = field.required ? " required" : "";
+        let control;
+        if (field.type === "select") {
+          control = `<select class="field" name="${name}"${required}>${field.options.map((option) => `<option value="${escapeHtml(option)}" ${(value || field.defaultValue) === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
+        } else if (field.type === "event") {
+          control = `<select class="field" name="${name}"><option value="">Unassigned</option>${events.map((event) => `<option value="${escapeHtml(event.id)}" ${value === event.id ? "selected" : ""}>${escapeHtml(event.title)}</option>`).join("")}</select>`;
+        } else if (field.type === "textarea") {
+          control = `<textarea class="field" name="${name}" placeholder="${escapeHtml(field.placeholder || "")}">${escapeHtml(value || "")}</textarea>`;
+        } else {
+          control = `<input class="field" name="${name}" type="${escapeHtml(field.type || "text")}" value="${escapeHtml(value || "")}" placeholder="${escapeHtml(field.placeholder || "")}"${required}>`;
+        }
+        return `<div class="form-field${field.wide ? " wide" : ""}"><label for="field-${name}">${label}${field.required ? " *" : ""}</label>${control.replace(`name="${name}"`, `id="field-${name}" name="${name}"`)}</div>`;
+      }
+      function portRowMarkup(kind, port = {}) {
+        const label = kind === "inputs" ? "input" : "output";
+        const signalLabel = kind === "inputs" ? "Source / signal" : "Destination";
+        return `<div class="port-row" data-port-row="${kind}">
+          <input class="field" data-port-field="number" aria-label="SDI ${label} port number" value="${escapeHtml(port.number || "")}" placeholder="1">
+          <input class="field" data-port-field="signal" aria-label="SDI ${label} ${signalLabel.toLowerCase()}" value="${escapeHtml(port.signal || "")}" placeholder="${signalLabel}">
+          <input class="field" data-port-field="format" aria-label="SDI ${label} format" value="${escapeHtml(port.format || "")}" placeholder="Format">
+          <input class="field" data-port-field="notes" aria-label="SDI ${label} notes" value="${escapeHtml(port.notes || "")}" placeholder="Notes">
+          <button class="port-remove" type="button" data-remove-port aria-label="Remove SDI ${label}">×</button>
+        </div>`;
+      }
+      function portEditorMarkup(kind, ports = []) {
+        const isInput = kind === "inputs";
+        const label = isInput ? "SDI inputs" : "SDI outputs";
+        return `<section class="port-section" aria-label="${label}">
+          <div class="port-section-head"><div><div class="port-section-title">${label}</div><div class="port-section-caption">Add one row for each physical port on this ATEM.</div></div>
+            <button class="button small" type="button" data-add-port="${kind}">＋ Add ${isInput ? "input" : "output"}</button></div>
+          <div class="port-list" id="${kind}-list">
+            <div class="port-labels"><span>Port #</span><span>${isInput ? "Source / signal" : "Destination"}</span><span>Format</span><span>Notes</span><span></span></div>
+            ${ports.map((port) => portRowMarkup(kind, port)).join("")}
+            ${ports.length ? "" : `<div class="port-empty">No ${isInput ? "inputs" : "outputs"} configured yet.</div>`}
+          </div>
+        </section>`;
+      }
+      function readPortRows(form, kind) {
+        return Array.from(form.querySelectorAll(`[data-port-row="${kind}"]`), (row, index) => ({
+          number: row.querySelector('[data-port-field="number"]').value.trim() || String(index + 1),
+          signal: row.querySelector('[data-port-field="signal"]').value.trim(),
+          format: row.querySelector('[data-port-field="format"]').value.trim(),
+          notes: row.querySelector('[data-port-field="notes"]').value.trim()
+        })).filter((port) => port.signal || port.format || port.notes);
+      }
+      async function openForm(page, id = "") {
+        if (!requireEditor()) return;
+        const config = configs[page];
+        const [records, events] = await Promise.all([getAll(page), getAll("events")]);
+        const current = records.find((item) => item.id === id) || {};
+        const title = id ? `Edit ${config.singular}` : `New ${config.singular}`;
+        $("#modal-root").innerHTML = `<div class="overlay" id="modal-overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <form id="record-form"><header class="modal-head"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${serverMode ? "Your changes are saved in MySQL." : "Your changes are saved in this browser database."}</p></div><button class="button icon-only" type="button" data-close aria-label="Close">×</button></header>
+            <div class="modal-body"><div class="form-grid">${config.fields.filter((field) => !field.private || canEdit()).map((field) => inputFor(field, current[field.name], events)).join("")}${page === "atem" ? `${portEditorMarkup("inputs", current.inputs || [])}${portEditorMarkup("outputs", current.outputs || [])}` : ""}</div></div>
+            <footer class="modal-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Save ${escapeHtml(config.singular)}</button></footer>
+          </form></section></div>`;
+        $("#record-form").addEventListener("click", (event) => {
+          const addButton = event.target.closest("[data-add-port]");
+          if (addButton) {
+            const kind = addButton.dataset.addPort;
+            const list = $(`#${kind}-list`);
+            list.querySelector(".port-empty")?.remove();
+            list.insertAdjacentHTML("beforeend", portRowMarkup(kind, { number: String(list.querySelectorAll("[data-port-row]").length + 1) }));
+            return;
+          }
+          const removeButton = event.target.closest("[data-remove-port]");
+          if (removeButton) {
+            const row = removeButton.closest("[data-port-row]");
+            const kind = row.dataset.portRow;
+            row.remove();
+            const list = $(`#${kind}-list`);
+            if (!list.querySelector("[data-port-row]")) {
+              list.insertAdjacentHTML("beforeend", `<div class="port-empty">No ${kind === "inputs" ? "inputs" : "outputs"} configured yet.</div>`);
+            }
+          }
+        });
+        $("#record-form").addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+          const record = { ...data, id: current.id || uid() };
+          if (page === "atem") {
+            record.inputs = readPortRows(event.currentTarget, "inputs");
+            record.outputs = readPortRows(event.currentTarget, "outputs");
+          }
+          try {
+            await writeRecord(page, record);
+            $("#modal-root").innerHTML = "";
+            showToast(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} saved.`);
+            await render();
+          } catch (error) {
+            showToast(`Could not save ${config.singular}: ${error.message}`, true);
+          }
+        });
+        $(".overlay").addEventListener("click", (event) => {
+          if (event.target.id === "modal-overlay" || event.target.closest("[data-close]")) $("#modal-root").innerHTML = "";
+        });
+        $(".field")?.focus();
+      }
+      async function openPanelButtonForm(mappingId = "") {
+        if (!requireEditor()) return;
+        const setup = (await getAll("atem")).find((item) => item.id === selectedPanelAtemId);
+        if (!setup) {
+          showToast("Select or create an ATEM setup before mapping panel buttons.", true);
+          return;
+        }
+        const current = (setup.panelButtons || []).find((item) => item.id === mappingId) || {};
+        const sections = ["Program bus", "Preview bus", "Upstream keyers", "Downstream keyers", "Transition control", "Macro", "Other"];
+        const colors = ["Default", "Red", "Green", "Amber", "Blue", "Purple", "White"];
+        $("#modal-root").innerHTML = `<div class="overlay" id="modal-overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <form id="panel-button-form"><header class="modal-head"><div><h2 id="modal-title">${mappingId ? "Edit" : "Add"} panel button mapping</h2><p>${escapeHtml(setup.name)}${setup.model ? ` · ${escapeHtml(setup.model)}` : ""}</p></div><button class="button icon-only" type="button" data-close aria-label="Close">×</button></header>
+            <div class="modal-body"><div class="form-grid">
+              <div class="form-field"><label for="mapping-section">Panel section</label><select class="field" id="mapping-section" name="section">${sections.map((section) => `<option value="${escapeHtml(section)}" ${(current.section || sections[0]) === section ? "selected" : ""}>${escapeHtml(section)}</option>`).join("")}</select></div>
+              <div class="form-field"><label for="mapping-button">Physical button *</label><input class="field" id="mapping-button" name="button" required value="${escapeHtml(current.button || "")}" placeholder="e.g. PGM 1, KEY 1 ON, AUTO"></div>
+              <div class="form-field"><label for="mapping-label">Button label</label><input class="field" id="mapping-label" name="label" value="${escapeHtml(current.label || "")}" placeholder="Label shown on your plan"></div>
+              <div class="form-field"><label for="mapping-color">Button color</label><select class="field" id="mapping-color" name="color">${colors.map((color) => `<option value="${escapeHtml(color)}" ${(current.color || "Default") === color ? "selected" : ""}>${escapeHtml(color)}</option>`).join("")}</select></div>
+              <div class="form-field wide"><label for="mapping-assignment">Assignment / action *</label><input class="field" id="mapping-assignment" name="assignment" required value="${escapeHtml(current.assignment || "")}" placeholder="e.g. Camera 1, Macro 3 — Open show, Cut to preview"></div>
+              <div class="form-field wide"><label for="mapping-notes">Notes</label><textarea class="field" id="mapping-notes" name="notes" placeholder="Optional operator notes">${escapeHtml(current.notes || "")}</textarea></div>
+            </div></div>
+            <footer class="modal-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Save mapping</button></footer>
+          </form></section></div>`;
+        $("#panel-button-form").addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+          const mapping = { ...data, id: current.id || uid() };
+          const panelButtons = [...(setup.panelButtons || [])];
+          const index = panelButtons.findIndex((item) => item.id === mapping.id);
+          if (index >= 0) panelButtons[index] = mapping;
+          else panelButtons.push(mapping);
+          try {
+            await writeRecord("atem", { ...setup, panelButtons });
+            $("#modal-root").innerHTML = "";
+            showToast("Button mapping saved.");
+            await renderPanelMapping();
+          } catch (error) {
+            showToast(`Could not save button mapping: ${error.message}`, true);
+          }
+        });
+        $(".overlay").addEventListener("click", (event) => {
+          if (event.target.id === "modal-overlay" || event.target.closest("[data-close]")) $("#modal-root").innerHTML = "";
+        });
+        $("#mapping-button").focus();
+      }
+      async function removePanelButton(mappingId) {
+        if (!requireEditor()) return;
+        const setup = (await getAll("atem")).find((item) => item.id === selectedPanelAtemId);
+        if (!setup || !window.confirm("Delete this panel button mapping? This cannot be undone.")) return;
+        try {
+          const panelButtons = (setup.panelButtons || []).filter((item) => item.id !== mappingId);
+          await writeRecord("atem", { ...setup, panelButtons });
+          showToast("Button mapping deleted.");
+          await renderPanelMapping();
+        } catch (error) {
+          showToast(`Could not delete button mapping: ${error.message}`, true);
+        }
+      }
+      async function addStreamDeckPage() {
+        if (!requireEditor()) return;
+        const event = (await getAll("events")).find((item) => item.id === selectedStreamDeckEventId);
+        if (!event) return;
+        try {
+          const nextPage = Math.max(1, Number(event.streamDeckPageCount) || 1) + 1;
+          await writeRecord("events", { ...event, streamDeckPageCount: nextPage });
+          selectedStreamDeckPage = nextPage;
+          showToast(`Stream Deck page ${nextPage} added.`);
+          await renderStreamDeck();
+        } catch (error) {
+          showToast(`Could not add Stream Deck page: ${error.message}`, true);
+        }
+      }
+      async function openStreamDeckButtonForm(buttonNumber) {
+        if (!requireEditor()) return;
+        const event = (await getAll("events")).find((item) => item.id === selectedStreamDeckEventId);
+        if (!event) {
+          showToast("Create an event before mapping Stream Deck buttons.", true);
+          return;
+        }
+        const current = (event.streamDeckButtons || []).find((item) =>
+          Number(item.page || 1) === selectedStreamDeckPage && Number(item.button) === buttonNumber) || {};
+        const colors = ["Default", "Red", "Green", "Amber", "Blue", "Purple", "White"];
+        $("#modal-root").innerHTML = `<div class="overlay" id="modal-overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <form id="streamdeck-button-form"><header class="modal-head"><div><h2 id="modal-title">Button ${String(buttonNumber).padStart(2, "0")} · Page ${selectedStreamDeckPage}</h2><p>${escapeHtml(event.title)} · Companion Stream Deck XL</p></div><button class="button icon-only" type="button" data-close aria-label="Close">×</button></header>
+            <div class="modal-body"><div class="form-grid">
+              <div class="form-field"><label for="streamdeck-title">Button title</label><input class="field" id="streamdeck-title" name="title" value="${escapeHtml(current.title || "")}" placeholder="e.g. Camera 1"></div>
+              <div class="form-field"><label for="streamdeck-color">Button color</label><select class="field" id="streamdeck-color" name="color">${colors.map((color) => `<option value="${escapeHtml(color)}" ${(current.color || "Default") === color ? "selected" : ""}>${escapeHtml(color)}</option>`).join("")}</select></div>
+              <div class="form-field wide"><label for="streamdeck-action">Companion action / actions</label><textarea class="field" id="streamdeck-action" name="action" placeholder="Describe the Companion button action or action sequence">${escapeHtml(current.action || "")}</textarea></div>
+              <div class="form-field wide"><label for="streamdeck-notes">Notes</label><textarea class="field" id="streamdeck-notes" name="notes" placeholder="Optional operator notes">${escapeHtml(current.notes || "")}</textarea></div>
+            </div></div>
+            <footer class="modal-actions">${current.id ? `<button class="button danger" type="button" data-clear-streamdeck>Clear button</button>` : ""}<button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Save button</button></footer>
+          </form></section></div>`;
+        $("#streamdeck-button-form").addEventListener("submit", async (formEvent) => {
+          formEvent.preventDefault();
+          const data = Object.fromEntries(new FormData(formEvent.currentTarget).entries());
+          const mapping = { ...data, id: current.id || uid(), page: selectedStreamDeckPage, button: buttonNumber };
+          const streamDeckButtons = (event.streamDeckButtons || []).filter((item) =>
+            Number(item.page || 1) !== selectedStreamDeckPage || Number(item.button) !== buttonNumber);
+          streamDeckButtons.push(mapping);
+          try {
+            await writeRecord("events", { ...event, streamDeckButtons, streamDeckPageCount: Math.max(Number(event.streamDeckPageCount) || 1, selectedStreamDeckPage) });
+            $("#modal-root").innerHTML = "";
+            showToast("Stream Deck button saved.");
+            await renderStreamDeck();
+          } catch (error) {
+            showToast(`Could not save Stream Deck button: ${error.message}`, true);
+          }
+        });
+        $("#streamdeck-button-form").addEventListener("click", async (formEvent) => {
+          if (!formEvent.target.closest("[data-clear-streamdeck]")) return;
+          const streamDeckButtons = (event.streamDeckButtons || []).filter((item) =>
+            Number(item.page || 1) !== selectedStreamDeckPage || Number(item.button) !== buttonNumber);
+          try {
+            await writeRecord("events", { ...event, streamDeckButtons });
+            $("#modal-root").innerHTML = "";
+            showToast("Stream Deck button cleared.");
+            await renderStreamDeck();
+          } catch (error) {
+            showToast(`Could not clear Stream Deck button: ${error.message}`, true);
+          }
+        });
+        $(".overlay").addEventListener("click", (clickEvent) => {
+          if (clickEvent.target.id === "modal-overlay" || clickEvent.target.closest("[data-close]")) $("#modal-root").innerHTML = "";
+        });
+        $("#streamdeck-title").focus();
+      }
+      async function removeRecord(page, id) {
+        if (!requireEditor()) return;
+        const config = configs[page];
+        if (!window.confirm(`Delete this ${config.singular}? This cannot be undone.`)) return;
+        try {
+          await deleteRecord(page, id);
+          showToast(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} deleted.`);
+          await render();
+        } catch (error) {
+          showToast(`Could not delete ${config.singular}: ${error.message}`, true);
+        }
+      }
+      function exportCsv(page) {
+        getAll(page).then((records) => {
+          const config = configs[page];
+          const columns = config.columns.filter(([field]) => field !== "multiviewUrl" || canEdit());
+          const headings = columns.map(([, label]) => label);
+          const rows = records.map((record) => columns.map(([field]) => {
+            if (field === "date") return formatDate(record[field]);
+            if (field === "streamUrl" || field === "multiviewUrl") return safeExternalUrl(record[field]);
+            return record[field] || "";
+          }));
+          const csv = [headings, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+          downloadFile(`${page}-${new Date().toISOString().slice(0, 10)}.csv`, "\uFEFF" + csv, "text/csv;charset=utf-8");
+        }).catch((error) => showToast(`Could not export CSV: ${error.message}`, true));
+      }
+      function downloadFile(filename, content, type) {
+        const url = URL.createObjectURL(new Blob([content], { type }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      function openLoginModal() {
+        $("#modal-root").innerHTML = `<div class="overlay" id="modal-overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="login-title" style="max-width:420px">
+          <form id="editor-login-form"><header class="modal-head"><div><h2 id="login-title">Editor login</h2><p>Sign in to create or change production entries.</p></div><button class="button icon-only" type="button" data-close aria-label="Close">×</button></header>
+            <div class="modal-body"><div class="form-grid"><div class="form-field wide"><label for="editor-password">Editor password</label><input class="field" id="editor-password" name="password" type="password" autocomplete="current-password" required></div><p class="login-error" id="editor-login-error"></p></div></div>
+            <footer class="modal-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Log in</button></footer>
+          </form></section></div>`;
+        $("#editor-login-form").addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const password = new FormData(event.currentTarget).get("password");
+          try {
+            const result = await apiRequest({ action: "login", password });
+            editorAuthenticated = Boolean(result.authenticated);
+            serverData = await apiRequest();
+            $("#modal-root").innerHTML = "";
+            updateEditorControls();
+            await render();
+            showToast("Editor mode enabled.");
+          } catch (error) {
+            $("#editor-login-error").textContent = error.message;
+          }
+        });
+        $(".overlay").addEventListener("click", (event) => {
+          if (event.target.id === "modal-overlay" || event.target.closest("[data-close]")) $("#modal-root").innerHTML = "";
+        });
+        $("#editor-password").focus();
+      }
+      function updateEditorControls() {
+        const button = $("#editor-login-button");
+        if (!button) return;
+        button.classList.toggle("hidden", !serverMode);
+        button.textContent = editorAuthenticated ? "Log out" : "Log in to edit";
+        $("#import-button").classList.toggle("hidden", serverMode && !editorAuthenticated);
+        $("#top-create").classList.toggle("hidden",
+          (serverMode && !editorAuthenticated) || (activePage !== "overview" && activePage !== "events"));
+      }
+      async function exportBackup() {
+        try {
+          const data = { format: "fielddesk-backup", version: 1, exportedAt: new Date().toISOString(), stores: {} };
+          for (const name of STORE_NAMES) data.stores[name] = await getAll(name);
+          downloadFile(`fielddesk-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), "application/json");
+          showToast("Database backup exported.");
+        } catch (error) {
+          showToast(`Could not export backup: ${error.message}`, true);
+        }
+      }
+      async function importBackup(file) {
+        if (!requireEditor()) return;
+        try {
+          const data = JSON.parse(await file.text());
+          if (data.format !== "fielddesk-backup" || !data.stores || !STORE_NAMES.every((name) => Array.isArray(data.stores[name]))) {
+            throw new Error("This file is not a valid Fielddesk database backup.");
+          }
+          const valid = STORE_NAMES.every((name) => data.stores[name].every((record) => record && typeof record.id === "string"));
+          if (!valid) throw new Error("One or more records are missing a valid ID.");
+          if (!window.confirm("Import this backup? Matching IDs will be replaced; other records will be kept.")) return;
+          if (serverMode) {
+            await apiRequest({ action: "merge", stores: data.stores });
+            serverData = await apiRequest();
+          } else {
+            const transaction = db.transaction(STORE_NAMES, "readwrite");
+            STORE_NAMES.forEach((name) => data.stores[name].forEach((record) => transaction.objectStore(name).put(record)));
+            await new Promise((resolve, reject) => {
+              transaction.oncomplete = resolve;
+              transaction.onerror = () => reject(transaction.error);
+              transaction.onabort = () => reject(transaction.error || new Error("Import was aborted."));
+            });
+          }
+          showToast("Backup imported successfully.");
+          await render();
+        } catch (error) {
+          if (error.status === 401) openLoginModal();
+          showToast(`Could not import backup: ${error.message}`, true);
+        } finally {
+          $("#import-file").value = "";
+        }
+      }
+      $("#navigation").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-page]");
+        if (!button) return;
+        if (metronomeRunning) stopMetronome();
+        activePage = button.dataset.page;
+        searchTerm = "";
+        eventFilter = "all";
+        crewFilter = "all";
+        render().catch((error) => showToast(`Could not load page: ${error.message}`, true));
+      });
+      $("#content").addEventListener("click", (event) => {
+        const pageButton = event.target.closest("[data-page]");
+        if (pageButton) {
+          if (metronomeRunning) stopMetronome();
+          activePage = pageButton.dataset.page;
+          searchTerm = "";
+          eventFilter = "all";
+          crewFilter = "all";
+          render().catch((error) => showToast(`Could not load page: ${error.message}`, true));
+          return;
+        }
+        const streamDeckKey = event.target.closest("[data-streamdeck-key]");
+        if (streamDeckKey) {
+          openStreamDeckButtonForm(Number(streamDeckKey.dataset.streamdeckKey)).catch((error) => showToast(`Could not open Stream Deck button: ${error.message}`, true));
+          return;
+        }
+        if (event.target.closest("[data-add-streamdeck-page]")) {
+          addStreamDeckPage();
+          return;
+        }
+        if (event.target.id === "metronome-toggle") {
+          metronomeRunning ? stopMetronome() : startMetronome();
+          return;
+        }
+        if (event.target.id === "metronome-tap") {
+          tapMetronome();
+          return;
+        }
+        const bpmChange = event.target.closest("[data-bpm-change]");
+        if (bpmChange) {
+          setMetronomeBpm(metronomeBpm + Number(bpmChange.dataset.bpmChange));
+          return;
+        }
+        const useBpm = event.target.closest("[data-use-bpm]");
+        if (useBpm) {
+          setMetronomeBpm(useBpm.dataset.useBpm);
+          return;
+        }
+        const addPanelButton = event.target.closest("[data-add-panel-button]");
+        if (addPanelButton) {
+          openPanelButtonForm().catch((error) => showToast(`Could not open button mapping: ${error.message}`, true));
+          return;
+        }
+        const editPanelButton = event.target.closest("[data-edit-panel-button]");
+        if (editPanelButton) {
+          openPanelButtonForm(editPanelButton.dataset.editPanelButton).catch((error) => showToast(`Could not open button mapping: ${error.message}`, true));
+          return;
+        }
+        const deletePanelButton = event.target.closest("[data-delete-panel-button]");
+        if (deletePanelButton) {
+          removePanelButton(deletePanelButton.dataset.deletePanelButton).catch((error) => showToast(`Could not delete button mapping: ${error.message}`, true));
+          return;
+        }
+        const create = event.target.closest("[data-create]");
+        if (create) openForm(create.dataset.create).catch((error) => showToast(error.message, true));
+        const edit = event.target.closest("[data-edit]");
+        if (edit) openForm(activePage, edit.dataset.edit).catch((error) => showToast(error.message, true));
+        const remove = event.target.closest("[data-delete]");
+        if (remove) removeRecord(activePage, remove.dataset.delete);
+        const exportButton = event.target.closest("[data-export]");
+        if (exportButton) exportCsv(exportButton.dataset.export);
+      });
+      $("#content").addEventListener("input", (event) => {
+        if (event.target.id === "metronome-bpm") {
+          setMetronomeBpm(event.target.value);
+          return;
+        }
+        if (event.target.id !== "search-input") return;
+        searchTerm = event.target.value;
+        const cursor = event.target.selectionStart;
+        const rerender = activePage === "songs" ? renderSongs() : renderTable(activePage);
+        Promise.resolve(rerender).then(() => {
+          const input = $("#search-input");
+          if (input) {
+            input.focus();
+            input.setSelectionRange(cursor, cursor);
+          }
+        }).catch((error) => showToast(`Could not search: ${error.message}`, true));
+      });
+      $("#content").addEventListener("change", (event) => {
+        if (event.target.id === "metronome-beats") {
+          metronomeBeats = Number(event.target.value) || 4;
+          metronomeBeat = 0;
+          renderSongs();
+          return;
+        }
+        if (event.target.id === "streamdeck-event-select") {
+          selectedStreamDeckEventId = event.target.value;
+          selectedStreamDeckPage = 1;
+          renderStreamDeck().catch((error) => showToast(`Could not load Stream Deck mapping: ${error.message}`, true));
+          return;
+        }
+        if (event.target.id === "streamdeck-page-select") {
+          selectedStreamDeckPage = Number(event.target.value) || 1;
+          renderStreamDeck().catch((error) => showToast(`Could not load Stream Deck page: ${error.message}`, true));
+          return;
+        }
+        if (event.target.id === "panel-setup-select") {
+          selectedPanelAtemId = event.target.value;
+          renderPanelMapping().catch((error) => showToast(`Could not load panel mapping: ${error.message}`, true));
+        } else if (event.target.id === "event-filter") eventFilter = event.target.value;
+        else if (event.target.id === "event-date-filter") eventDateFilter = event.target.value;
+        else if (event.target.id === "crew-filter") crewFilter = event.target.value;
+        else return;
+        if (activePage === "songs") {
+          renderSongs().catch((error) => showToast(`Could not filter songs: ${error.message}`, true));
+        } else if (activePage !== "panel-map") {
+          renderTable(activePage).catch((error) => showToast(`Could not filter records: ${error.message}`, true));
+        }
+      });
+      $("#top-create").addEventListener("click", () => openForm("events").catch((error) => showToast(error.message, true)));
+      $("#editor-login-button").addEventListener("click", async () => {
+        if (!editorAuthenticated) {
+          openLoginModal();
+          return;
+        }
+        try {
+          await apiRequest({ action: "logout" });
+          editorAuthenticated = false;
+          serverData = null;
+          serverData = await apiRequest();
+          updateEditorControls();
+          await render();
+          showToast("Editor mode disabled.");
+        } catch (error) {
+          showToast(`Could not log out: ${error.message}`, true);
+        }
+      });
+      $("#export-button").addEventListener("click", exportBackup);
+      $("#import-button").addEventListener("click", () => $("#import-file").click());
+      $("#import-file").addEventListener("change", (event) => {
+        const [file] = event.target.files;
+        if (file) importBackup(file);
+      });
+      $("#access-form").addEventListener("submit", handleAccessSubmit);
+
+      async function startLocalDatabase() {
+        const database = await openDatabase();
+        db = database;
+        await seedIfEmpty();
+        $("#db-label").textContent = "Local database · ready";
+        $("#storage-note").textContent = "Your production plans are stored in this browser. Export a backup anytime.";
+        updateEditorControls();
+        await render();
+      }
+
+      if (location.protocol === "http:" || location.protocol === "https:") {
+        apiRequest().then(async (data) => {
+          serverMode = true;
+          serverData = data;
+          editorAuthenticated = Boolean(data.authenticated);
+          $("#db-label").textContent = "MySQL database · ready";
+          $("#storage-note").textContent = "Production data is saved in MySQL.";
+          if (editorAuthenticated) {
+            unlockApp();
+            updateEditorControls();
+            await render();
+          } else {
+            showAccessGate(false);
+            $("#access-copy").textContent = "Enter the Fielddesk editor password to access the planner.";
+            updateEditorControls();
+          }
+        }).catch((error) => {
+          $("#app-shell").hidden = false;
+          $("#access-overlay").hidden = true;
+          $("#db-label").textContent = error.setup ? "Database setup required" : "Database unavailable";
+          $("#storage-note").textContent = error.setup
+            ? "Open setup.php once to enter the MySQL connection details."
+            : "Check the server database configuration.";
+          $("#content").innerHTML = `<div class="page-heading"><div><div class="eyebrow">Database status</div><h1>${error.setup ? "Connect MySQL" : "Could not connect"}</h1><p class="subtitle">${escapeHtml(error.message)}</p></div></div>
+            ${error.setup ? `<section class="panel"><div class="empty-state"><div class="empty-symbol">◆</div>Open <strong>setup.php</strong> in the deployed website folder, enter your MySQL details, test the connection, then reload this page.<br><br><button class="button primary" type="button" id="open-db-setup">Open database setup</button></div></section>` : ""}`;
+          $("#open-db-setup")?.addEventListener("click", () => {
+            location.href = "setup.php";
+          });
+        });
+      } else {
+        try {
+          const saved = localStorage.getItem("fielddesk-local-auth");
+          showAccessGate(!saved);
+        } catch (error) {
+          $("#db-label").textContent = "Database unavailable";
+          $("#app-shell").hidden = false;
+          $("#access-overlay").hidden = true;
+          $("#content").innerHTML = `<div class="page-heading"><div><div class="eyebrow">Startup error</div><h1>Could not open Fielddesk</h1><p class="subtitle">${escapeHtml(error.message)}</p></div></div>`;
+          showToast(error.message, true);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
