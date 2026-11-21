@@ -102,6 +102,31 @@
     .event-info { min-width: 0; flex: 1; }
     .event-name { font-weight: 650; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .event-meta { color: var(--muted); font-size: 10px; margin-top: 5px; }
+    .event-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .event-toolbar .toolbar-left, .event-toolbar .toolbar-right { display: flex; align-items: center; gap: 9px; }
+    .event-summary { color: var(--muted); font-size: 11px; }
+    .event-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .event-card { min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 17px; transition: border-color .15s, box-shadow .15s; }
+    .event-card:hover { border-color: #d7dad8; box-shadow: 0 5px 18px #17212b0a; }
+    .event-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .event-card-date { flex: 0 0 47px; height: 51px; border-radius: 8px; background: #fff2eb; display: grid; align-content: center; text-align: center; }
+    .event-card-date .date-day { font-size: 19px; }
+    .event-card-date .date-month { font-size: 9px; }
+    .event-card-heading { min-width: 0; flex: 1; }
+    .event-card-title { margin: 1px 0 0; font-size: 14px; font-weight: 720; letter-spacing: -.2px; overflow-wrap: anywhere; }
+    .event-card-client { color: var(--muted); font-size: 10px; margin-top: 5px; }
+    .event-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+    .event-tag { display: inline-flex; align-items: center; border-radius: 20px; padding: 5px 9px; background: #f0f3f2; color: #53616a; font-size: 9px; font-weight: 700; }
+    .event-tag.category { background: #fff1e9; color: var(--accent-dark); }
+    .event-tag.series { background: #f0eefa; color: #6d5a99; }
+    .event-card-details { display: grid; gap: 7px; padding: 13px 0; margin-top: 13px; border-top: 1px solid #eff0ef; border-bottom: 1px solid #eff0ef; color: #5f6b73; font-size: 10px; }
+    .event-detail { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+    .event-detail strong { flex: 0 0 58px; color: #8a949a; font-size: 9px; font-weight: 650; text-transform: uppercase; letter-spacing: .4px; }
+    .event-detail span { min-width: 0; overflow-wrap: anywhere; }
+    .event-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 13px; }
+    .event-crew-count { color: var(--muted); font-size: 10px; }
+    .event-card-actions { display: flex; gap: 5px; }
+    .event-empty { grid-column: 1 / -1; }
     .badge { display: inline-flex; align-items: center; border-radius: 20px; padding: 4px 8px; font-size: 9px; line-height: 1; font-weight: 700; white-space: nowrap; background: #eef0f1; color: #67737d; }
     .badge.Confirmed, .badge.Ready, .badge.Available, .badge.Active { background: var(--green-bg); color: var(--green); }
     .badge.Planning, .badge.Reserved, .badge.Setup { background: var(--amber-bg); color: var(--amber); }
@@ -157,6 +182,11 @@
     .port-remove { width: 30px; height: 32px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--red); font-size: 16px; }
     .port-remove:hover { background: var(--red-bg); }
     .port-empty { color: var(--muted); font-size: 10px; padding: 4px 0 8px; }
+    .crew-assignment-section { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 8px; padding: 13px; min-width: 0; }
+    .crew-assignment-head { margin-bottom: 12px; }
+    .crew-assignment-title { font-size: 11px; font-weight: 700; }
+    .crew-assignment-caption { color: var(--muted); font-size: 9px; margin-top: 3px; }
+    .crew-assignment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
     .metronome-grid { display: grid; grid-template-columns: 1fr minmax(260px, .72fr); gap: 17px; margin-bottom: 17px; }
     .metronome-panel { background: #17212b; color: #fff; border: 1px solid #17212b; border-radius: 10px; padding: 18px; }
     .metronome-main { display: grid; grid-template-columns: 1fr 112px; gap: 16px; align-items: center; }
@@ -227,8 +257,12 @@
       .page-heading { align-items: flex-start; }
       .page-heading .button { margin-top: 8px; }
       .dashboard-grid { grid-template-columns: 1fr; }
+      .event-grid { grid-template-columns: 1fr; }
       .toolbar { align-items: flex-start; flex-direction: column; }
       .toolbar-left, .toolbar-right { width: 100%; }
+      .event-toolbar { align-items: flex-start; flex-direction: column; }
+      .event-toolbar .toolbar-left, .event-toolbar .toolbar-right { width: 100%; }
+      .event-toolbar .toolbar-right { flex-wrap: wrap; }
       .search-wrap { flex: 1; }
       .search { width: 100%; }
     }
@@ -242,6 +276,7 @@
       .metronome-actions #metronome-beats { grid-column: 1 / -1; }
       .form-grid { grid-template-columns: 1fr; }
       .form-field.wide { grid-column: auto; }
+      .crew-assignment-grid { grid-template-columns: 1fr; }
       .badge { font-size: 8px; }
     }
   </style>
@@ -297,6 +332,7 @@
       const DB_VERSION = 2;
       const API_URL = "api.php";
       const STORE_NAMES = ["events", "cameras", "crew", "channels", "atem", "cables", "songs"];
+      const CREW_POSITIONS = ["Cam 1", "Cam 2", "Cam 3", "Cam 4", "Cam 5", "Cam 6", "Cam 7", "VM1", "VM2", "VM Engineer", "GGO"];
       const navItems = [
         { id: "overview", label: "Overview", icon: "⌂" },
         { id: "events", label: "Events", icon: "▦" },
@@ -312,9 +348,11 @@
       const configs = {
         events: {
           title: "Events", singular: "event", subtitle: "Plan upcoming productions, keep past events, and track stream links.",
-          icon: "▦", columns: [["title", "Event"], ["date", "Date"], ["client", "Client"], ["venue", "Venue"], ["streamUrl", "Public stream"], ["multiviewUrl", "Internal multiview"], ["status", "Status"]],
+          icon: "▦", columns: [["title", "Event"], ["category", "Category"], ["series", "Event series"], ["date", "Date"], ["client", "Client"], ["venue", "Venue"], ["crewAssignments", "Crew lineup"], ["streamUrl", "Public stream"], ["multiviewUrl", "Internal multiview"], ["status", "Status"]],
           fields: [
             { name: "title", label: "Event name", required: true, wide: true },
+            { name: "category", label: "Category", placeholder: "e.g. Conference, Concert, Corporate" },
+            { name: "series", label: "Event series", placeholder: "Optional · e.g. Annual Summit" },
             { name: "client", label: "Client / organization" },
             { name: "venue", label: "Venue" },
             { name: "date", label: "Event date", type: "date", required: true },
@@ -340,12 +378,10 @@
           ]
         },
         crew: {
-          title: "Crew", singular: "crew member", subtitle: "Coordinate camera operators, video engineers, and production crew.",
-          icon: "♙", columns: [["name", "Crew member"], ["role", "Role"], ["eventId", "Event"], ["email", "Email"], ["status", "Status"]],
+          title: "Crew", singular: "crew member", subtitle: "Maintain your crew roster. Assign each person's position separately for every event.",
+          icon: "♙", columns: [["name", "Crew member"], ["email", "Email"], ["status", "Status"]],
           fields: [
             { name: "name", label: "Full name", required: true },
-            { name: "role", label: "Production role", type: "select", options: ["Video Manager", "Video Engineer", "Video Operator", "Camera Operator", "Video Planner", "Vision Mixer", "Stage Manager", "Other"], defaultValue: "Camera Operator" },
-            { name: "eventId", label: "Event", type: "event" },
             { name: "email", label: "Email", type: "email" },
             { name: "phone", label: "Phone" },
             { name: "status", label: "Status", type: "select", options: ["Confirmed", "Available", "Unavailable"], defaultValue: "Available" },
@@ -420,7 +456,7 @@
       let searchTerm = "";
       let eventFilter = "all";
       let eventDateFilter = "all";
-      let crewFilter = "all";
+      let eventCategoryFilter = "all";
       let selectedPanelAtemId = "";
       let selectedStreamDeckEventId = "";
       let selectedStreamDeckPage = 1;
@@ -599,8 +635,13 @@
         request.onblocked = () => reject(new Error("Database upgrade is blocked by another open Fielddesk tab. Close other tabs and reload."));
       });
       const sampleData = () => {
+        const crewOneId = uid();
+        const crewTwoId = uid();
+        const crewThreeId = uid();
         const eventOne = { id: uid(), title: "Northstar Product Summit", client: "Northstar Labs", venue: "Forum Hall · Amsterdam", date: "2026-12-03", start: "07:00", end: "20:30", status: "Confirmed", notes: "Main stage + confidence monitor" };
         const eventTwo = { id: uid(), title: "Studio Sessions — Winter", client: "Studio Noord", venue: "Studio 2 · Utrecht", date: "2026-12-11", start: "09:00", end: "17:00", status: "Planning", notes: "Three-camera interview setup" };
+        eventOne.crewAssignments = { "Cam 1": crewOneId, "VM Engineer": crewTwoId };
+        eventTwo.crewAssignments = { VM1: crewThreeId };
         return {
           events: [eventOne, eventTwo],
           cameras: [
@@ -609,9 +650,9 @@
             { id: uid(), name: "Cam 3 · Interview", model: "Blackmagic Studio Camera 6K Pro", serial: "S6K-0872", operator: "Jules Visser", eventId: eventTwo.id, status: "Available", notes: "" }
           ],
           crew: [
-            { id: uid(), name: "Milan de Vries", role: "Camera Operator", eventId: eventOne.id, email: "milan@example.com", phone: "", status: "Confirmed", notes: "" },
-            { id: uid(), name: "Sanne Bakker", role: "Video Engineer", eventId: eventOne.id, email: "sanne@example.com", phone: "", status: "Confirmed", notes: "System + comms" },
-            { id: uid(), name: "Jules Visser", role: "Video Operator", eventId: eventTwo.id, email: "jules@example.com", phone: "", status: "Available", notes: "" }
+            { id: crewOneId, name: "Milan de Vries", email: "milan@example.com", phone: "", status: "Confirmed", notes: "" },
+            { id: crewTwoId, name: "Sanne Bakker", email: "sanne@example.com", phone: "", status: "Confirmed", notes: "System + comms" },
+            { id: crewThreeId, name: "Jules Visser", email: "jules@example.com", phone: "", status: "Available", notes: "" }
           ],
           channels: [
             { id: uid(), number: "1", name: "Cam 1 · Wide", source: "Cam 1 SDI OUT", destination: "ATEM Input 1", format: "1080p50", eventId: eventOne.id, notes: "" },
@@ -665,6 +706,18 @@
       }
       function eventName(id, events) {
         return events.find((event) => event.id === id)?.title || "Unassigned";
+      }
+      function eventCrewAssignments(event, crew) {
+        if (event.crewAssignments && typeof event.crewAssignments === "object" && !Array.isArray(event.crewAssignments)) {
+          return event.crewAssignments;
+        }
+        return crew.reduce((assignments, member) => {
+          const position = member.position || member.role;
+          if (member.eventId === event.id && CREW_POSITIONS.includes(position) && !assignments[position]) {
+            assignments[position] = member.id;
+          }
+          return assignments;
+        }, {});
       }
       function safeExternalUrl(value) {
         try {
@@ -720,19 +773,86 @@
             </section>
           </div>`;
       }
+      async function renderEvents() {
+        const [events, crew] = await Promise.all([getAll("events"), getAll("crew")]);
+        const today = localDateString();
+        const categories = [...new Set(events.map((event) => String(event.category || "").trim()).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b));
+        const filtered = events.filter((event) => {
+          const matchesQuery = !searchTerm || Object.values(event).some((value) =>
+            String(value ?? "").toLowerCase().includes(searchTerm.toLowerCase()));
+          const matchesCategory = eventCategoryFilter === "all" ||
+            String(event.category || "").trim() === eventCategoryFilter;
+          const isPastEvent = event.date < today || event.status === "Completed" || event.status === "Cancelled";
+          const matchesDate = eventDateFilter === "all" ||
+            (eventDateFilter === "past" ? isPastEvent : !isPastEvent);
+          return matchesQuery && matchesCategory && matchesDate;
+        }).sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) ||
+          String(a.title || "").localeCompare(String(b.title || "")));
+        const seriesCount = new Set(events.map((event) => String(event.series || "").trim()).filter(Boolean)).size;
+        $("#content").innerHTML = `${renderPageHeading("Events", "Plan productions, group recurring events into series, and keep the crew lineup close.", "＋ Add event")}
+          <div class="event-toolbar">
+            <div class="toolbar-left"><div class="search-wrap"><input id="search-input" class="search" type="search" placeholder="Search events..." value="${escapeHtml(searchTerm)}" aria-label="Search events"></div>
+              <span class="event-summary">${filtered.length} ${filtered.length === 1 ? "event" : "events"} · ${seriesCount} event ${seriesCount === 1 ? "series" : "series"}</span></div>
+            <div class="toolbar-right">
+              <select id="event-category-filter" class="select-control" aria-label="Filter events by category">
+                <option value="all">All categories</option>${categories.map((category) => `<option value="${escapeHtml(category)}" ${eventCategoryFilter === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
+              </select>
+              <select id="event-date-filter" class="select-control" aria-label="Filter events by date">
+                <option value="all" ${eventDateFilter === "all" ? "selected" : ""}>All dates</option>
+                <option value="upcoming" ${eventDateFilter === "upcoming" ? "selected" : ""}>Upcoming</option>
+                <option value="past" ${eventDateFilter === "past" ? "selected" : ""}>Past / completed</option>
+              </select>
+              <button class="button" type="button" data-export="events">↥ Export CSV</button>
+            </div>
+          </div>
+          <div class="event-grid">${filtered.length ? filtered.map((event) => {
+            const eventDate = event.date ? new Date(`${event.date}T12:00:00`) : null;
+            const assignments = eventCrewAssignments(event, crew);
+            const assignedCrew = CREW_POSITIONS.map((position) => {
+              const member = crew.find((person) => person.id === assignments[position]);
+              return member ? { ...member, assignedPosition: position } : null;
+            }).filter(Boolean);
+            const crewSummary = assignedCrew.slice(0, 3).map((member) =>
+              `${member.assignedPosition}: ${member.name}`).join(", ");
+            const streamUrl = safeExternalUrl(event.streamUrl);
+            const multiviewUrl = canEdit() ? safeExternalUrl(event.multiviewUrl) : "";
+            return `<article class="event-card">
+              <div class="event-card-top">
+                <div class="event-card-date">${eventDate && !Number.isNaN(eventDate.getTime())
+                  ? `<div class="date-day">${eventDate.getDate()}</div><div class="date-month">${new Intl.DateTimeFormat("en", { month: "short" }).format(eventDate)}</div>`
+                  : `<div class="date-day">—</div><div class="date-month">Date</div>`}</div>
+                <div class="event-card-heading"><h2 class="event-card-title">${escapeHtml(event.title || "Untitled event")}</h2>
+                  <div class="event-card-client">${escapeHtml(event.client || "No client assigned")}</div></div>
+                ${statusBadge(event.status)}
+              </div>
+              <div class="event-card-tags">${event.category ? `<span class="event-tag category">${escapeHtml(event.category)}</span>` : `<span class="event-tag">Uncategorized</span>`}
+                ${event.series ? `<span class="event-tag series">↗ ${escapeHtml(event.series)}</span>` : ""}</div>
+              <div class="event-card-details">
+                <div class="event-detail"><strong>Date</strong><span>${escapeHtml(formatDate(event.date))}${event.start ? ` · Call ${escapeHtml(event.start)}` : ""}${event.end ? `–${escapeHtml(event.end)}` : ""}</span></div>
+                <div class="event-detail"><strong>Venue</strong><span>${escapeHtml(event.venue || "Venue TBD")}</span></div>
+                <div class="event-detail"><strong>Crew</strong><span>${escapeHtml(crewSummary || "No crew assigned")}${assignedCrew.length > 3 ? ` · +${assignedCrew.length - 3} more` : ""}</span></div>
+              </div>
+              <div class="event-card-bottom"><div class="event-crew-count">${assignedCrew.length} ${assignedCrew.length === 1 ? "crew member" : "crew members"}</div>
+                <div class="event-card-actions">${streamUrl ? `<a class="button small" href="${escapeHtml(streamUrl)}" target="_blank" rel="noopener noreferrer">Open stream</a>` : ""}
+                  ${multiviewUrl ? `<a class="button small" href="${escapeHtml(multiviewUrl)}" target="_blank" rel="noopener noreferrer">Multiview</a>` : ""}
+                  ${canEdit() ? `<button class="button icon-only small" type="button" data-edit="${escapeHtml(event.id)}" aria-label="Edit event" title="Edit event">✎</button><button class="button icon-only small danger" type="button" data-delete="${escapeHtml(event.id)}" aria-label="Delete event" title="Delete event">×</button>` : ""}
+                </div>
+              </div>
+            </article>`;
+          }).join("") : `<section class="panel event-empty"><div class="empty-state"><div class="empty-symbol">▦</div>${searchTerm || eventCategoryFilter !== "all" || eventDateFilter !== "all" ? "No events match these filters." : "No events yet. Add a production to start building your calendar."}</div></section>`}</div>`;
+      }
       async function renderTable(page) {
         const config = configs[page];
         const [records, events] = await Promise.all([getAll(page), getAll("events")]);
         const today = localDateString();
         const filtered = records.filter((record) => {
           const matchesQuery = !searchTerm || Object.values(record).some((value) => String(value ?? "").toLowerCase().includes(searchTerm.toLowerCase()));
-          const matchesEvent = page === "events" || eventFilter === "all" || record.eventId === eventFilter;
+          const matchesEvent = page === "events" || page === "crew" || eventFilter === "all" || record.eventId === eventFilter;
           const isPastEvent = record.date < today || record.status === "Completed" || record.status === "Cancelled";
           const matchesEventDate = page !== "events" || eventDateFilter === "all" ||
             (eventDateFilter === "past" ? isPastEvent : !isPastEvent);
-          const matchesCrew = page !== "crew" || crewFilter === "all" ||
-            (crewFilter === "leaders" ? record.role !== "Camera Operator" : record.role === "Camera Operator");
-          return matchesQuery && matchesEvent && matchesEventDate && matchesCrew;
+          return matchesQuery && matchesEvent && matchesEventDate;
         }).sort((a, b) => {
           if (page === "events") return String(b.date || "").localeCompare(String(a.date || ""));
           const field = config.columns[0][0];
@@ -742,8 +862,7 @@
         $("#content").innerHTML = `${renderPageHeading(config.title, config.subtitle, `＋ Add ${config.singular}`)}
           <div class="toolbar"><div class="toolbar-left"><div class="search-wrap"><input id="search-input" class="search" type="search" placeholder="Search ${escapeHtml(config.title.toLowerCase())}..." value="${escapeHtml(searchTerm)}" aria-label="Search ${escapeHtml(config.title.toLowerCase())}"></div></div>
             <div class="toolbar-right">${page === "events" ? `<select id="event-date-filter" class="select-control" aria-label="Filter events by date"><option value="all" ${eventDateFilter === "all" ? "selected" : ""}>All events · past and upcoming</option><option value="upcoming" ${eventDateFilter === "upcoming" ? "selected" : ""}>Upcoming</option><option value="past" ${eventDateFilter === "past" ? "selected" : ""}>Past / completed</option></select>` : ""}
-              ${page === "crew" ? `<select id="crew-filter" class="select-control" aria-label="Filter crew by role group"><option value="all" ${crewFilter === "all" ? "selected" : ""}>All crew</option><option value="leaders" ${crewFilter === "leaders" ? "selected" : ""}>Leaders</option><option value="workers" ${crewFilter === "workers" ? "selected" : ""}>Workers</option></select>` : ""}
-              ${page !== "events" && events.length ? `<select id="event-filter" class="select-control" aria-label="Filter by event"><option value="all">All events</option>${events.sort((a, b) => a.date.localeCompare(b.date)).map((event) => `<option value="${escapeHtml(event.id)}" ${eventFilter === event.id ? "selected" : ""}>${escapeHtml(event.title)}</option>`).join("")}</select>` : ""}
+              ${page !== "events" && page !== "crew" && events.length ? `<select id="event-filter" class="select-control" aria-label="Filter by event"><option value="all">All events</option>${events.sort((a, b) => a.date.localeCompare(b.date)).map((event) => `<option value="${escapeHtml(event.id)}" ${eventFilter === event.id ? "selected" : ""}>${escapeHtml(event.title)}</option>`).join("")}</select>` : ""}
               <button class="button" type="button" data-export="${page}">↥ Export CSV</button></div>
           </div>
           <section class="panel table-panel"><div class="table-scroll"><table><thead><tr>${columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("")}${canEdit() ? `<th style="text-align:right">Actions</th>` : ""}</tr></thead>
@@ -913,6 +1032,7 @@
         else if (activePage === "panel-map") await renderPanelMapping();
         else if (activePage === "streamdeck") await renderStreamDeck();
         else if (activePage === "songs") await renderSongs();
+        else if (activePage === "events") await renderEvents();
         else await renderTable(activePage);
       }
 
@@ -922,7 +1042,13 @@
         const required = field.required ? " required" : "";
         let control;
         if (field.type === "select") {
-          control = `<select class="field" name="${name}"${required}>${field.options.map((option) => `<option value="${escapeHtml(option)}" ${(value || field.defaultValue) === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
+          const options = field.preserveUnknown && value && !field.options.includes(value)
+            ? [`Existing · ${value}`, ...field.options]
+            : field.options;
+          control = `<select class="field" name="${name}"${required}>${options.map((option) => {
+            const optionValue = option.startsWith("Existing · ") ? value : option;
+            return `<option value="${escapeHtml(optionValue)}" ${(value || field.defaultValue) === optionValue ? "selected" : ""}>${escapeHtml(option)}</option>`;
+          }).join("")}</select>`;
         } else if (field.type === "event") {
           control = `<select class="field" name="${name}"><option value="">Unassigned</option>${events.map((event) => `<option value="${escapeHtml(event.id)}" ${value === event.id ? "selected" : ""}>${escapeHtml(event.title)}</option>`).join("")}</select>`;
         } else if (field.type === "textarea") {
@@ -964,15 +1090,33 @@
           notes: row.querySelector('[data-port-field="notes"]').value.trim()
         })).filter((port) => port.signal || port.format || port.notes);
       }
+      function crewAssignmentMarkup(crew, event) {
+        const assignments = eventCrewAssignments(event, crew);
+        return `<section class="crew-assignment-section" aria-label="Event crew lineup">
+          <div class="crew-assignment-head"><div class="crew-assignment-title">Crew lineup</div><div class="crew-assignment-caption">Choose one person for each position. Manage people in the Crew tab.</div></div>
+          <div class="crew-assignment-grid">${CREW_POSITIONS.map((position) => {
+            const inputId = `crew-assignment-${position.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+            return `<div class="form-field"><label for="${inputId}">${escapeHtml(position)}</label>
+              <select class="field" id="${inputId}" data-crew-assignment="${escapeHtml(position)}">
+                <option value="">Unassigned</option>${crew.map((member) => `<option value="${escapeHtml(member.id)}" ${assignments[position] === member.id ? "selected" : ""}>${escapeHtml(member.name)}${member.email ? ` · ${escapeHtml(member.email)}` : ""}</option>`).join("")}
+              </select></div>`;
+          }).join("")}</div>
+          ${crew.length ? "" : `<div class="port-empty">Add crew members in the Crew tab before assigning this event.</div>`}
+        </section>`;
+      }
       async function openForm(page, id = "") {
         if (!requireEditor()) return;
         const config = configs[page];
-        const [records, events] = await Promise.all([getAll(page), getAll("events")]);
+        const [records, events, crew] = await Promise.all([
+          getAll(page),
+          getAll("events"),
+          page === "events" ? getAll("crew") : Promise.resolve([])
+        ]);
         const current = records.find((item) => item.id === id) || {};
         const title = id ? `Edit ${config.singular}` : `New ${config.singular}`;
         $("#modal-root").innerHTML = `<div class="overlay" id="modal-overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <form id="record-form"><header class="modal-head"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${serverMode ? "Your changes are saved in MySQL." : "Your changes are saved in this browser database."}</p></div><button class="button icon-only" type="button" data-close aria-label="Close">×</button></header>
-            <div class="modal-body"><div class="form-grid">${config.fields.filter((field) => !field.private || canEdit()).map((field) => inputFor(field, current[field.name], events)).join("")}${page === "atem" ? `${portEditorMarkup("inputs", current.inputs || [])}${portEditorMarkup("outputs", current.outputs || [])}` : ""}</div></div>
+            <div class="modal-body"><div class="form-grid">${config.fields.filter((field) => !field.private || canEdit()).map((field) => inputFor(field, current[field.name], events)).join("")}${page === "events" ? crewAssignmentMarkup(crew, current) : ""}${page === "atem" ? `${portEditorMarkup("inputs", current.inputs || [])}${portEditorMarkup("outputs", current.outputs || [])}` : ""}</div></div>
             <footer class="modal-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">Save ${escapeHtml(config.singular)}</button></footer>
           </form></section></div>`;
         $("#record-form").addEventListener("click", (event) => {
@@ -999,6 +1143,12 @@
           event.preventDefault();
           const data = Object.fromEntries(new FormData(event.currentTarget).entries());
           const record = { ...data, id: current.id || uid() };
+          if (page === "events") {
+            record.crewAssignments = Object.fromEntries(Array.from(
+              event.currentTarget.querySelectorAll("[data-crew-assignment]"),
+              (select) => [select.dataset.crewAssignment, select.value]
+            ).filter(([, memberId]) => memberId));
+          }
           if (page === "atem") {
             record.inputs = readPortRows(event.currentTarget, "inputs");
             record.outputs = readPortRows(event.currentTarget, "outputs");
@@ -1155,13 +1305,21 @@
         }
       }
       function exportCsv(page) {
-        getAll(page).then((records) => {
+        Promise.all([getAll(page), page === "events" ? getAll("crew") : Promise.resolve([])]).then(([records, crew]) => {
           const config = configs[page];
           const columns = config.columns.filter(([field]) => field !== "multiviewUrl" || canEdit());
           const headings = columns.map(([, label]) => label);
           const rows = records.map((record) => columns.map(([field]) => {
             if (field === "date") return formatDate(record[field]);
             if (field === "streamUrl" || field === "multiviewUrl") return safeExternalUrl(record[field]);
+            if (field === "position") return record.position || "";
+            if (field === "crewAssignments") {
+              const assignments = eventCrewAssignments(record, crew);
+              return CREW_POSITIONS.filter((position) => assignments[position]).map((position) => {
+                const member = crew.find((person) => person.id === assignments[position]);
+                return member ? `${position}: ${member.name}` : "";
+              }).filter(Boolean).join("; ");
+            }
             return record[field] || "";
           }));
           const csv = [headings, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
@@ -1259,7 +1417,8 @@
         activePage = button.dataset.page;
         searchTerm = "";
         eventFilter = "all";
-        crewFilter = "all";
+        eventDateFilter = "all";
+        eventCategoryFilter = "all";
         render().catch((error) => showToast(`Could not load page: ${error.message}`, true));
       });
       $("#content").addEventListener("click", (event) => {
@@ -1269,7 +1428,8 @@
           activePage = pageButton.dataset.page;
           searchTerm = "";
           eventFilter = "all";
-          crewFilter = "all";
+          eventDateFilter = "all";
+          eventCategoryFilter = "all";
           render().catch((error) => showToast(`Could not load page: ${error.message}`, true));
           return;
         }
@@ -1332,7 +1492,7 @@
         if (event.target.id !== "search-input") return;
         searchTerm = event.target.value;
         const cursor = event.target.selectionStart;
-        const rerender = activePage === "songs" ? renderSongs() : renderTable(activePage);
+        const rerender = activePage === "songs" ? renderSongs() : activePage === "events" ? renderEvents() : renderTable(activePage);
         Promise.resolve(rerender).then(() => {
           const input = $("#search-input");
           if (input) {
@@ -1364,10 +1524,12 @@
           renderPanelMapping().catch((error) => showToast(`Could not load panel mapping: ${error.message}`, true));
         } else if (event.target.id === "event-filter") eventFilter = event.target.value;
         else if (event.target.id === "event-date-filter") eventDateFilter = event.target.value;
-        else if (event.target.id === "crew-filter") crewFilter = event.target.value;
+        else if (event.target.id === "event-category-filter") eventCategoryFilter = event.target.value;
         else return;
         if (activePage === "songs") {
           renderSongs().catch((error) => showToast(`Could not filter songs: ${error.message}`, true));
+        } else if (activePage === "events") {
+          renderEvents().catch((error) => showToast(`Could not filter events: ${error.message}`, true));
         } else if (activePage !== "panel-map") {
           renderTable(activePage).catch((error) => showToast(`Could not filter records: ${error.message}`, true));
         }
